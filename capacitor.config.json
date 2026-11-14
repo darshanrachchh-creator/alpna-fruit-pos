@@ -1,0 +1,8 @@
+{
+  "appId": "com.alpnafruit.pos",
+  "appName": "Alpna Fruit POS",
+  "webDir": ".",
+  "server": {
+    "androidScheme": "https"
+  }
+}
