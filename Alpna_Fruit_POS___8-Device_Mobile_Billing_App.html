@@ -1,0 +1,3291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Alpna Fruit POS">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Alpna Fruit POS — 8-Device Mobile Billing App</title>
+    <link id="dynamicManifestLink" rel="manifest" href="">
+    <link id="appleTouchIconLink" rel="apple-touch-icon" href="">
+    <link id="faviconLink" rel="icon" type="image/svg+xml" href="">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: contain;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background: #ffffff !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col select-none">
+
+    <!-- =================================================================== -->
+    <!-- TOP HEADER: APP BRANDING, SYNC SETUP, INSTALL APP & 8-DEVICE ROLE   -->
+    <!-- =================================================================== -->
+    <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-md no-print">
+        <div class="max-w-5xl mx-auto px-3 py-2 flex items-center justify-between gap-2">
+            <!-- Left: App Icon, Title, Interactive Sync Status & Fleet Counter -->
+            <div class="flex items-center gap-2 min-w-0">
+                <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-slate-950 font-black text-lg shrink-0 shadow">
+                    🍎
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <h1 class="text-xs sm:text-sm font-black tracking-tight truncate">ALPNA FRUIT POS</h1>
+                        <button id="syncStatusBadge" type="button" title="Configure Cloud Sync" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition shrink-0">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                            Local Mode
+                        </button>
+                        <span id="fleetCounterBadge" class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shrink-0 mono">
+                            1/8 Devices
+                        </span>
+                    </div>
+                    <p id="liveClockText" class="text-[10px] text-slate-400 mono truncate">14/11/2026 18:23</p>
+                </div>
+            </div>
+
+            <!-- Right: Install App Button, Admin Del Req Alert & 8-Device Role Selector -->
+            <div class="flex items-center gap-1.5 shrink-0">
+                <button id="installAppBtn" type="button" class="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-2.5 py-1.5 rounded-xl text-[11px] font-black shadow transition">
+                    <span>📲</span>
+                    <span class="hidden sm:inline">Install App</span>
+                    <span class="sm:hidden">App</span>
+                </button>
+
+                <button id="adminDelReqAlertBtn" type="button" class="hidden items-center gap-1 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white px-2.5 py-1.5 rounded-xl text-[11px] font-black shadow animate-pulse">
+                    <span>🔔</span>
+                    <span>Del Req (<span id="adminDelReqCount">0</span>)</span>
+                </button>
+
+                <button id="openProfileModalBtn" type="button" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 active:scale-95 border border-slate-700 px-2.5 py-1.5 rounded-xl transition">
+                    <span id="roleHeaderBadge" class="px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase bg-amber-400 text-slate-950">ADMIN</span>
+                    <div class="text-left">
+                        <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold leading-none" id="deviceSlotHeaderLabel">Dev 1/8</div>
+                        <div id="activeProfileDisplay" class="text-xs font-extrabold text-emerald-400 leading-tight max-w-[85px] truncate">Owner</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- 4-Tab Navigation Bar -->
+        <nav class="max-w-5xl mx-auto px-2.5 pb-2 grid grid-cols-4 gap-1.5">
+            <button type="button" data-tab="pos" class="nav-tab-btn py-2 px-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold transition flex items-center justify-center gap-1 bg-emerald-600 text-white shadow-sm">
+                <span>🧾</span>
+                <span class="truncate">POS Billing</span>
+            </button>
+            <button type="button" data-tab="historical" class="nav-tab-btn py-2 px-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold transition flex items-center justify-center gap-1 bg-slate-800 text-slate-300 hover:bg-slate-700">
+                <span>🗂️</span>
+                <span class="truncate">Historical Bill</span>
+                <span id="navBillCountBadge" class="hidden sm:inline-block bg-slate-700 text-emerald-300 text-[9px] font-black px-1.5 rounded-full mono">0</span>
+            </button>
+            <button type="button" data-tab="plu" class="nav-tab-btn py-2 px-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold transition flex items-center justify-center gap-1 bg-slate-800 text-slate-300 hover:bg-slate-700">
+                <span>📋</span>
+                <span class="truncate">PLU Report</span>
+            </button>
+            <button type="button" data-tab="history" class="nav-tab-btn py-2 px-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold transition flex items-center justify-center gap-1 bg-slate-800 text-slate-300 hover:bg-slate-700">
+                <span>📊</span>
+                <span class="truncate">History & JSON</span>
+            </button>
+        </nav>
+    </header>
+
+    <!-- Toast Notification Banner -->
+    <div id="toastContainer" class="fixed top-24 left-1/2 -translate-x-1/2 z-50 pointer-events-none w-[92%] max-w-md flex flex-col gap-2 no-print"></div>
+
+    <!-- =================================================================== -->
+    <!-- MAIN WORKSPACE CONTAINER                                            -->
+    <!-- =================================================================== -->
+    <main class="flex-1 max-w-5xl w-full mx-auto px-2.5 sm:px-3 pt-2.5 pb-28">
+
+        <!-- =============================================================== -->
+        <!-- TAB 1: POS BILLING (NATIVE KEYBOARD + 37 FRUITS + CASH/GPAY)    -->
+        <!-- =============================================================== -->
+        <section id="tab-pos" class="space-y-2.5">
+
+            <!-- TOP RECEIPT DISPLAY CARD -->
+            <div class="bg-white rounded-2xl border-2 border-slate-300 shadow-sm overflow-hidden">
+                <div class="bg-blue-700 text-white px-3 py-1.5 flex items-center justify-between text-xs font-bold">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="mono shrink-0" id="nextReceiptNoLabel">RcptNo: 01-070444</span>
+                        <span class="text-blue-200">|</span>
+                        <span class="truncate"><span id="receiptRoleTag" class="uppercase text-[10px] bg-blue-900 px-1.5 py-0.5 rounded mr-1">Admin</span><span id="receiptClerkLabel" class="font-extrabold text-amber-300">Owner</span></span>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button id="toggleGstBtn" type="button" class="px-2 py-0.5 rounded-lg bg-blue-800 hover:bg-blue-900 border border-blue-500 text-[10px] font-extrabold transition">
+                            GST: <span id="gstRateLabel">0%</span>
+                        </button>
+                        <button id="toggleRefundBtn" type="button" class="px-2 py-0.5 rounded-lg bg-blue-800 hover:bg-blue-900 border border-blue-500 text-[10px] font-extrabold transition">
+                            C/N
+                        </button>
+                        <button id="clearCartBtn" type="button" class="px-2 py-0.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-[10px] font-extrabold transition">
+                            CLEAR
+                        </button>
+                    </div>
+                </div>
+
+                <div id="refundModeBadge" class="hidden bg-rose-600 text-white text-center text-[11px] font-black py-1 tracking-wider uppercase">
+                    ⚠️ C/N REFUND MODE ACTIVE — NEXT ITEM WILL BE NEGATIVE
+                </div>
+
+                <div class="grid grid-cols-12 bg-slate-100 border-b border-slate-300 px-2.5 py-1.5 text-[10px] sm:text-[11px] font-extrabold uppercase text-slate-600">
+                    <div class="col-span-5">Fruit / Sub-Col</div>
+                    <div class="col-span-2 text-right">Qty</div>
+                    <div class="col-span-2 text-right">Rate(₹)</div>
+                    <div class="col-span-3 text-right">Total(₹)</div>
+                </div>
+
+                <div id="activeReceiptLines" class="divide-y divide-slate-100 max-h-44 overflow-y-auto bg-blue-50/30">
+                    <div class="py-6 text-center text-xs text-slate-400 font-medium">
+                        No fruits added yet. Tap a fruit below to start billing.
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 border-t-2 border-slate-300 px-3 py-2 grid grid-cols-2 sm:grid-cols-4 gap-2 items-center">
+                    <div class="text-xs font-bold text-slate-600">
+                        Items: <span id="cartItemCount" class="mono font-black text-slate-900">0</span>
+                        <span class="mx-1 text-slate-300">|</span>
+                        Qty: <span id="cartTotalQty" class="mono font-black text-slate-900">0</span>
+                    </div>
+                    <div class="text-xs font-bold text-slate-600 sm:text-right">
+                        Subtotal: <span class="mono font-extrabold text-slate-900">₹<span id="cartSubtotal">0.00</span></span>
+                    </div>
+                    <div class="text-xs font-bold text-slate-600">
+                        Tax: <span class="mono font-extrabold text-slate-900">₹<span id="cartTaxAmount">0.00</span></span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[11px] font-extrabold uppercase text-slate-500 mr-1">TOTAL</span>
+                        <span class="mono text-lg sm:text-xl font-black text-emerald-700">₹<span id="cartGrandTotal">0.00</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP-BY-STEP ENTRY BUILDER (NATIVE KEYBOARD — NO ON-SCREEN NUMPAD) -->
+            <div id="itemBuilderCard" class="bg-white rounded-2xl border-2 border-emerald-500/40 shadow-sm p-3 space-y-2.5">
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                    <div class="flex items-center gap-1.5 text-xs font-extrabold">
+                        <span class="px-2 py-0.5 rounded-lg bg-slate-900 text-white text-[10px]">ACTIVE ENTRY</span>
+                        <span id="builderFruitBadge" class="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800">1. Pick Fruit Below</span>
+                        <span class="text-slate-300">→</span>
+                        <span id="builderSubColBadge" class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500">2. Sub-Column</span>
+                    </div>
+                    <button id="resetBuilderBtn" type="button" class="text-[11px] font-bold text-slate-500 hover:text-rose-600 px-2 py-0.5 rounded-lg hover:bg-rose-50 transition">
+                        ↺ Reset Line
+                    </button>
+                </div>
+
+                <!-- STEP 2: SUB-COLUMN SELECTOR PILLS -->
+                <div id="subColumnSection" class="hidden space-y-1.5 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-600">
+                            Step 2: Select <span id="selectedFruitTitle" class="text-emerald-700">FRUIT</span> Sub-Column
+                        </span>
+                        <button id="openAddSubColQuickBtn" type="button" class="admin-only-control text-[10px] font-extrabold text-indigo-600 hover:underline">
+                            + Add Sub-Col
+                        </button>
+                    </div>
+                    <div id="subColumnsGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-1.5"></div>
+                </div>
+
+                <!-- STEP 3 & STEP 4: NATIVE NUMERIC INPUTS (QUANTITY & PER-UNIT RATE) -->
+                <div id="qtyRateSection" class="hidden space-y-2.5">
+                    <div>
+                        <label class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">
+                            Step 3A: Unit Format
+                        </label>
+                        <div id="unitPillsContainer" class="flex flex-wrap gap-1">
+                            <button type="button" data-unit="Kg" class="unit-pill-btn px-2.5 py-1 rounded-xl text-xs font-extrabold bg-emerald-600 text-white shadow-sm">Kg</button>
+                            <button type="button" data-unit="Box" class="unit-pill-btn px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">Box</button>
+                            <button type="button" data-unit="Kerat" class="unit-pill-btn px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">Kerat</button>
+                            <button type="button" data-unit="Peti" class="unit-pill-btn px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">Peti</button>
+                            <button type="button" data-unit="Plate" class="unit-pill-btn px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">Plate</button>
+                            <button type="button" data-unit="Dabi" class="unit-pill-btn px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">Dabi</button>
+                            <button type="button" data-unit="Can" class="unit-pill-btn px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">Can</button>
+                            <button type="button" data-unit="Pcs" class="unit-pill-btn px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">Pcs</button>
+                            <button type="button" data-unit="Dozen" class="unit-pill-btn px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">Dozen</button>
+                            <button type="button" data-unit="Plain" class="unit-pill-btn px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">Plain</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div class="rounded-2xl border-2 border-blue-500 bg-blue-50/50 p-2.5">
+                            <div class="flex items-center justify-between mb-1">
+                                <label for="qtyInput" class="text-[10px] font-black uppercase text-blue-800">Step 3B: Qty (<span id="qtyUnitLabel">Kg</span>)</label>
+                                <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-blue-600 text-white">TYPE QTY</span>
+                            </div>
+                            <input id="qtyInput" type="number" step="any" inputmode="decimal" placeholder="0.00" class="w-full rounded-xl border border-blue-200 bg-white px-3 py-2 mono text-xl sm:text-2xl font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <div class="flex gap-1 mt-1.5">
+                                <button type="button" data-quickqty="0.25" class="quick-qty-btn flex-1 py-1 rounded-lg bg-white border border-blue-200 text-[10px] font-extrabold text-blue-800 hover:bg-blue-100">0.25</button>
+                                <button type="button" data-quickqty="0.5" class="quick-qty-btn flex-1 py-1 rounded-lg bg-white border border-blue-200 text-[10px] font-extrabold text-blue-800 hover:bg-blue-100">0.50</button>
+                                <button type="button" data-quickqty="1" class="quick-qty-btn flex-1 py-1 rounded-lg bg-white border border-blue-200 text-[10px] font-extrabold text-blue-800 hover:bg-blue-100">1</button>
+                                <button type="button" data-quickqty="2" class="quick-qty-btn flex-1 py-1 rounded-lg bg-white border border-blue-200 text-[10px] font-extrabold text-blue-800 hover:bg-blue-100">2</button>
+                                <button type="button" data-quickqty="5" class="quick-qty-btn flex-1 py-1 rounded-lg bg-white border border-blue-200 text-[10px] font-extrabold text-blue-800 hover:bg-blue-100">5</button>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl border-2 border-rose-500 bg-rose-50/50 p-2.5">
+                            <div class="flex items-center justify-between mb-1">
+                                <label for="rateInput" class="text-[10px] font-black uppercase text-rose-800">Step 4: Rate / <span id="rateUnitLabel">Kg</span> (₹)</label>
+                                <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-rose-600 text-white">1 <span id="rateBadgeUnit">KG</span> ₹</span>
+                            </div>
+                            <input id="rateInput" type="number" step="any" inputmode="decimal" placeholder="0" class="w-full rounded-xl border border-rose-200 bg-white px-3 py-2 mono text-xl sm:text-2xl font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500">
+                            <div class="text-[10px] font-bold text-slate-500 mt-1.5 truncate">
+                                Price for 1 <span id="rateUnitHint">Kg</span> (Enter to add)
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 text-white rounded-2xl p-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                        <div class="flex items-center justify-between sm:justify-start gap-3 px-1">
+                            <div>
+                                <div class="text-[10px] uppercase font-bold text-slate-400">Calculation</div>
+                                <div id="calcFormulaPreview" class="mono text-xs sm:text-sm font-extrabold text-slate-200">0 Kg × ₹0/Kg</div>
+                            </div>
+                            <div class="text-right sm:text-left sm:border-l sm:border-slate-700 sm:pl-3">
+                                <div class="text-[10px] uppercase font-bold text-slate-400">Line Total</div>
+                                <div class="mono text-lg sm:text-xl font-black text-emerald-400">₹<span id="calcLineTotalPreview">0.00</span></div>
+                            </div>
+                        </div>
+
+                        <button id="addLineToBillBtn" type="button" class="w-full sm:w-auto py-3 px-5 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-sm shadow-lg transition flex items-center justify-center gap-2 shrink-0">
+                            <span>+ ADD ITEM TO BILL & NEXT FRUIT</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 1: 37 FRUIT CATEGORIES GRID -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-2.5 space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-[11px] font-black uppercase tracking-wider text-slate-700">
+                        Step 1: Choose Fruit (<span id="fruitCountLabel">37</span>)
+                    </span>
+                    <div class="flex items-center gap-1.5 flex-1 max-w-xs justify-end">
+                        <input id="fruitSearchInput" type="text" placeholder="Search fruit or PLU..." class="w-full rounded-xl border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white">
+                        <button id="openAddFruitModalBtn" type="button" class="admin-only-control px-2.5 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-extrabold shrink-0">
+                            + Fruit
+                        </button>
+                    </div>
+                </div>
+
+                <div id="fruitCategoriesGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-1.5"></div>
+            </div>
+        </section>
+
+        <!-- =============================================================== -->
+        <!-- TAB 2: HISTORICAL BILL (SPLIT VIEW + ADMIN DELETE APPROVAL)     -->
+        <!-- =============================================================== -->
+        <section id="tab-historical" class="hidden space-y-3">
+            <div id="hbAdminPendingStrip" class="hidden bg-rose-600 text-white rounded-2xl p-3 shadow-md flex items-center justify-between gap-2 no-print">
+                <div class="text-xs font-extrabold">
+                    🔔 <span id="hbAdminPendingText">1 staff deletion request awaiting your Admin approval.</span>
+                </div>
+                <button id="hbReviewRequestsBtn" type="button" class="px-3 py-1.5 rounded-xl bg-white text-rose-700 font-black text-xs shrink-0 shadow">
+                    Review Requests
+                </button>
+            </div>
+
+            <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm space-y-2.5 no-print">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-sm sm:text-base font-black text-rose-600 uppercase tracking-tight">Historical Bill</h2>
+                        <span id="histBillTotalCountBadge" class="bg-slate-900 text-emerald-400 text-[11px] font-black px-2 py-0.5 rounded-full mono">0 Bills</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button id="exportHistBillsCsvBtn" type="button" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold transition">
+                            ⬇ Bills CSV
+                        </button>
+                        <button id="printSelectedReceiptBtn" type="button" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-extrabold transition">
+                            🖨 Print Receipt
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                    <div class="sm:col-span-5 flex flex-wrap items-center gap-1.5">
+                        <button type="button" data-hbperiod="TODAY" class="hb-period-btn px-2.5 py-1.5 rounded-xl text-xs font-extrabold bg-slate-900 text-white">Today</button>
+                        <button type="button" data-hbperiod="YESTERDAY" class="hb-period-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">Yesterday</button>
+                        <button type="button" data-hbperiod="ALL" class="hb-period-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">All Bills</button>
+                    </div>
+                    <div class="sm:col-span-7 relative">
+                        <input id="hbSearchInput" type="text" placeholder="Search RcptNo (070445), fruit, Staff 1-7, or Admin..." class="w-full rounded-xl border border-slate-300 bg-slate-50 pl-8 pr-3 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-emerald-500 focus:bg-white">
+                        <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-[10px] font-extrabold uppercase text-slate-400 mb-0.5">Period From</label>
+                        <input id="hbStartDate" type="date" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-2 py-1.5 text-xs font-bold text-slate-800">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-extrabold uppercase text-slate-400 mb-0.5">Period To</label>
+                        <input id="hbEndDate" type="date" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-2 py-1.5 text-xs font-bold text-slate-800">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-extrabold uppercase text-slate-400 mb-0.5">Payment Mode</label>
+                        <select id="hbPayFilter" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-2 py-1.5 text-xs font-bold text-slate-800">
+                            <option value="ALL">All (Cash & GPay)</option>
+                            <option value="CASH">Cash Only</option>
+                            <option value="GPAY">GPay Only</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Split View: Left Master List | Right Itemized Receipt Preview -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+                <div class="md:col-span-5 bg-white rounded-2xl border border-slate-300 shadow-sm overflow-hidden no-print">
+                    <div class="bg-slate-700 text-white grid grid-cols-12 px-2.5 py-2 text-[11px] font-extrabold uppercase tracking-wider border-b border-slate-600">
+                        <div class="col-span-4">RcptNo</div>
+                        <div class="col-span-5">Date</div>
+                        <div class="col-span-3 text-right">Amount</div>
+                    </div>
+                    <div id="hbMasterListContainer" class="divide-y divide-slate-200 max-h-[340px] md:max-h-[520px] overflow-y-auto bg-slate-50/40">
+                        <div class="py-10 text-center text-xs text-slate-400 font-medium">
+                            No saved bills in this period.
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 text-white px-3 py-2 flex items-center justify-between text-xs font-black">
+                        <span class="text-slate-400 uppercase text-[10px]">Period Total</span>
+                        <span class="mono text-emerald-400 text-sm">₹<span id="hbMasterPeriodTotal">0</span></span>
+                    </div>
+                </div>
+
+                <div id="hbReceiptPreviewCard" class="md:col-span-7 bg-white rounded-2xl border-2 border-slate-300 shadow-sm overflow-hidden">
+                    <div class="bg-slate-800 text-white px-3 py-2 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-1.5 min-w-0 flex-wrap">
+                            <span class="text-xs font-black uppercase tracking-wider text-emerald-400 mono" id="hbPreviewRcptHeader">RcptNo: --</span>
+                            <span id="hbPreviewPayBadge" class="hidden text-[10px] font-black px-2 py-0.5 rounded-full">CASH</span>
+                            <span id="hbPreviewPendingBadge" class="hidden text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-400 text-slate-950">DEL REQ PENDING</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 no-print shrink-0">
+                            <button id="copySelectedReceiptBtn" type="button" class="px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-[11px] font-extrabold transition">
+                                📋 Copy
+                            </button>
+                            <button id="billDeleteActionBtn" type="button" class="hidden px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-extrabold transition">
+                                🗑 Delete Bill
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-12 bg-slate-100 border-b border-slate-300 px-3 py-2 text-[11px] font-extrabold uppercase text-slate-700">
+                        <div class="col-span-5">Description</div>
+                        <div class="col-span-2 text-right">Qty</div>
+                        <div class="col-span-2 text-right">Price</div>
+                        <div class="col-span-3 text-right">Amount / Del</div>
+                    </div>
+
+                    <div id="hbPreviewItemsBody" class="divide-y divide-slate-100 min-h-[180px] max-h-[340px] overflow-y-auto bg-white">
+                        <div class="py-12 text-center text-xs text-slate-400 font-medium">
+                            Select any bill on the left to view all fruits in that receipt.
+                        </div>
+                    </div>
+
+                    <div id="hbPreviewFooterBlock" class="hidden bg-slate-50 border-t-2 border-slate-300 px-3 py-2.5 space-y-1.5 text-xs">
+                        <div class="grid grid-cols-12 items-center font-bold text-slate-700">
+                            <div class="col-span-5">Subtotal</div>
+                            <div class="col-span-2 text-right mono font-extrabold text-slate-900" id="hbPreviewTotalQty">0.00</div>
+                            <div class="col-span-2"></div>
+                            <div class="col-span-3 text-right mono font-extrabold text-slate-900" id="hbPreviewSubtotalAmt">0</div>
+                        </div>
+                        <div class="grid grid-cols-12 items-center font-black text-slate-950 text-sm border-t border-slate-200 pt-1">
+                            <div class="col-span-7 uppercase">TOTAL</div>
+                            <div class="col-span-5 text-right mono text-base text-emerald-700" id="hbPreviewGrandTotalAmt">0</div>
+                        </div>
+                        <div class="grid grid-cols-12 items-center font-extrabold text-slate-800">
+                            <div class="col-span-7 uppercase" id="hbPreviewPayModeRowLabel">CASH</div>
+                            <div class="col-span-5 text-right mono" id="hbPreviewPayModeRowAmt">0</div>
+                        </div>
+                        <div class="grid grid-cols-12 items-center pt-1.5 border-t border-dashed border-slate-300 text-[11px] font-bold text-slate-600 mono">
+                            <div class="col-span-5 truncate" id="hbPreviewFooterDateTime">14/11/2026 10:59</div>
+                            <div class="col-span-4 text-center text-indigo-700 font-extrabold truncate" id="hbPreviewFooterClerk">Admin (Owner)</div>
+                            <div class="col-span-3 text-right font-black text-slate-900" id="hbPreviewFooterShortRcpt">070445</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =============================================================== -->
+        <!-- TAB 3: PLU SALES REPORT & 8-DEVICE CLERK BREAKDOWN              -->
+        <!-- =============================================================== -->
+        <section id="tab-plu" class="hidden space-y-3">
+            <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm space-y-2.5 no-print">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                        <h2 class="text-sm sm:text-base font-black text-rose-600 uppercase tracking-tight">PLU Sales Report</h2>
+                        <p class="text-[11px] text-slate-500 font-semibold" id="pluPeriodSubtitle">Period: Today 00:00 - 23:59</p>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button id="exportPluCsvBtn" type="button" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold transition">
+                            ⬇ Export PLU CSV
+                        </button>
+                        <button id="printPluReportBtn" type="button" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-extrabold transition">
+                            🖨 Print Report
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <button type="button" data-pluperiod="TODAY" class="plu-period-btn px-2.5 py-1.5 rounded-xl text-xs font-extrabold bg-slate-900 text-white">Today (00:00 - 23:59)</button>
+                    <button type="button" data-pluperiod="YESTERDAY" class="plu-period-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">Yesterday</button>
+                    <button type="button" data-pluperiod="ALL" class="plu-period-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">All Time</button>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-[10px] font-extrabold uppercase text-slate-400 mb-0.5">From Date</label>
+                        <input id="pluStartDate" type="date" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-2 py-1.5 text-xs font-bold text-slate-800">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-extrabold uppercase text-slate-400 mb-0.5">To Date</label>
+                        <input id="pluEndDate" type="date" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-2 py-1.5 text-xs font-bold text-slate-800">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-extrabold uppercase text-slate-400 mb-0.5">Payment Filter</label>
+                        <select id="pluPayFilter" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-2 py-1.5 text-xs font-bold text-slate-800">
+                            <option value="ALL">All (Cash + GPay)</option>
+                            <option value="CASH">Cash Only</option>
+                            <option value="GPAY">GPay Only</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+                <div class="bg-white rounded-2xl p-2.5 border border-slate-200 shadow-sm">
+                    <div class="text-[10px] font-extrabold uppercase text-slate-400">Cash Sales</div>
+                    <div class="mono text-sm sm:text-base font-black text-amber-600 mt-0.5">₹<span id="pluCashTotal">0</span></div>
+                </div>
+                <div class="bg-white rounded-2xl p-2.5 border border-slate-200 shadow-sm">
+                    <div class="text-[10px] font-extrabold uppercase text-slate-400">GPay Sales</div>
+                    <div class="mono text-sm sm:text-base font-black text-blue-600 mt-0.5">₹<span id="pluGpayTotal">0</span></div>
+                </div>
+                <div class="bg-slate-900 text-white rounded-2xl p-2.5 shadow-sm">
+                    <div class="text-[10px] font-extrabold uppercase text-slate-400">Grand Total</div>
+                    <div class="mono text-sm sm:text-base font-black text-emerald-400 mt-0.5">₹<span id="pluTopGrandTotal">0</span></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border-2 border-slate-300 shadow-sm overflow-hidden">
+                <div class="bg-slate-700 text-white grid grid-cols-12 px-3 py-2 text-[11px] font-extrabold uppercase tracking-wider">
+                    <div class="col-span-2">Code</div>
+                    <div class="col-span-5">Description</div>
+                    <div class="col-span-2 text-right">Qty Sold</div>
+                    <div class="col-span-3 text-right">Amount</div>
+                </div>
+
+                <div id="pluTableBody" class="divide-y divide-slate-200 max-h-[420px] overflow-y-auto">
+                    <div class="py-10 text-center text-xs text-slate-400 font-medium">
+                        No PLU sales recorded for this period.
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 text-white grid grid-cols-12 items-center px-3 py-2.5 text-xs sm:text-sm font-black border-t-2 border-slate-700">
+                    <div class="col-span-2 text-slate-400 uppercase text-[10px]">TOTAL</div>
+                    <div class="col-span-5 text-slate-300 text-xs font-bold"><span id="pluDistinctItemsCount">0</span> PLU Items</div>
+                    <div class="col-span-2 text-right mono text-amber-300" id="pluFooterTotalQty">0.00</div>
+                    <div class="col-span-3 text-right mono text-emerald-400 text-base">₹<span id="pluFooterTotalAmount">0</span></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm space-y-2">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-black uppercase tracking-wider text-slate-700">8-Device Sales Breakdown (1 Admin + 7 Staff)</h3>
+                    <span class="text-[10px] font-bold text-slate-400">Selected Period</span>
+                </div>
+                <div id="deviceFleetSalesGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+            </div>
+        </section>
+
+        <!-- =============================================================== -->
+        <!-- TAB 4: PER-FRUIT HISTORY, JSON DATABASE & CLOUD/APP SETTINGS    -->
+        <!-- =============================================================== -->
+        <section id="tab-history" class="hidden space-y-3">
+            <!-- App Installation & 8-Phone Cloud Sync Setup Card -->
+            <div class="bg-indigo-950 text-white rounded-2xl p-3.5 shadow-md space-y-2.5">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">📲</span>
+                        <div>
+                            <h3 class="text-xs sm:text-sm font-black tracking-tight">Mobile App & 8-Phone Cloud Sync Setup</h3>
+                            <p class="text-[11px] text-indigo-200">Configure Firebase once on Admin phone, then share the 1-tap Setup Link to the other 7 phones.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button id="openInstallGuideModalBtn" type="button" class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition">
+                            Install App / APK
+                        </button>
+                        <button id="openCloudConfigModalBtn" type="button" class="px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-extrabold text-xs border border-white/20 transition">
+                            ☁️ Cloud Sync Setup
+                        </button>
+                        <button id="copy8PhoneSetupLinkBtn" type="button" class="hidden px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs transition">
+                            🔗 Copy 8-Phone Setup Link
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin-Only Management Panel -->
+            <div id="adminManagementCard" class="bg-amber-50 rounded-2xl p-3.5 border-2 border-amber-300 shadow-sm space-y-2.5">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded-lg bg-amber-400 text-slate-950 text-[10px] font-black uppercase">ADMIN CONTROLS</span>
+                        <h3 class="text-xs sm:text-sm font-black text-slate-900">Catalog, Deletion Approvals & Database</h3>
+                    </div>
+                    <span class="text-[11px] font-bold text-amber-800">Role: <strong id="adminPanelCurrentRole">Admin (Owner)</strong></span>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button id="openDelRequestsQueueBtn" type="button" class="px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold transition">
+                        🔔 Deletion Requests (<span id="adminPanelDelReqCount">0</span>)
+                    </button>
+                    <button id="adminAddFruitShortcutBtn" type="button" class="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold transition">
+                        + Add Fruit / Sub-Column
+                    </button>
+                    <button id="adminClearAllBillsBtn" type="button" class="px-3 py-2 rounded-xl bg-slate-200 hover:bg-rose-100 text-rose-700 text-xs font-extrabold transition">
+                        🗑 Clear All Sales Data
+                    </button>
+                </div>
+            </div>
+
+            <!-- Staff Locked Notice -->
+            <div id="staffLockedNoticeCard" class="hidden bg-slate-200 rounded-2xl p-3 border border-slate-300 text-xs text-slate-700 flex items-center justify-between gap-2">
+                <span>🔒 <strong>Staff Mode:</strong> Entry deletions require <strong>Admin</strong> approval. Request deletions inside the <strong>Historical Bill</strong> tab.</span>
+                <button id="switchToAdminPromptBtn" type="button" class="px-2.5 py-1.5 rounded-xl bg-slate-900 text-white font-extrabold text-[11px] shrink-0">
+                    Switch Role
+                </button>
+            </div>
+
+            <!-- Per-Fruit History Filter Controls -->
+            <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-sm sm:text-base font-black text-slate-900 uppercase tracking-tight">Per-Fruit & Device Sales History</h2>
+                    <button id="resetHistoryFiltersBtn" type="button" class="text-xs font-extrabold text-indigo-600 hover:underline">
+                        Reset Filters
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div>
+                        <label class="block text-[10px] font-extrabold uppercase text-slate-400 mb-0.5">Fruit</label>
+                        <select id="histFruitFilter" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-2 py-1.5 text-xs font-bold text-slate-800">
+                            <option value="ALL">All 37 Fruits</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-extrabold uppercase text-slate-400 mb-0.5">Sub-Column</label>
+                        <select id="histSubColFilter" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-2 py-1.5 text-xs font-bold text-slate-800">
+                            <option value="ALL">All Sub-Columns</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-extrabold uppercase text-slate-400 mb-0.5">Device / Staff</label>
+                        <select id="histClerkFilter" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-2 py-1.5 text-xs font-bold text-slate-800">
+                            <option value="ALL">All 8 Devices</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-extrabold uppercase text-slate-400 mb-0.5">Date</label>
+                        <input id="histDateFilter" type="date" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-2 py-1.5 text-xs font-bold text-slate-800">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aggregated Per-Fruit Summary Cards -->
+            <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm space-y-2">
+                <h3 class="text-xs font-black uppercase tracking-wider text-slate-500">Aggregated Sales by Fruit & Sub-Column</h3>
+                <div id="fruitSummaryCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto"></div>
+            </div>
+
+            <!-- Chronological Fruit Item Log -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="bg-slate-800 text-white px-3 py-2 text-xs font-extrabold uppercase tracking-wider flex justify-between">
+                    <span>Chronological Item Log</span>
+                    <span id="histItemLogCount" class="mono text-emerald-400">0 Entries</span>
+                </div>
+                <div id="fruitChronologicalList" class="divide-y divide-slate-100 max-h-72 overflow-y-auto"></div>
+            </div>
+
+            <!-- Structured JSON Database & Export -->
+            <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm space-y-2.5">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                        <h3 class="text-sm font-black text-slate-900 uppercase tracking-tight">Synced JSON Database & Backup</h3>
+                        <p class="text-[11px] text-slate-500 font-medium">Complete structured JSON log of all multi-item bills across 8 devices.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button id="copyJsonBtn" type="button" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-extrabold transition">
+                            📋 Copy JSON
+                        </button>
+                        <button id="downloadJsonBtn" type="button" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold transition">
+                            ⬇ Download .JSON
+                        </button>
+                        <button id="downloadFullCsvBtn" type="button" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold transition">
+                            ⬇ Download .CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-slate-950 text-emerald-300 rounded-xl p-3 overflow-x-auto max-h-72 overflow-y-auto border border-slate-800">
+                    <pre id="jsonPayloadViewer" class="mono text-[11px] leading-relaxed">[]</pre>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- =================================================================== -->
+    <!-- FIXED BOTTOM INSTANT CHECKOUT BAR (CASH & GPAY)                     -->
+    <!-- =================================================================== -->
+    <div id="posBottomActionBar" class="fixed bottom-0 inset-x-0 bg-slate-900/95 backdrop-blur border-t border-slate-700 p-2.5 z-40 no-print">
+        <div class="max-w-5xl mx-auto grid grid-cols-12 gap-2 items-center">
+            <div class="col-span-4 text-white">
+                <div class="text-[10px] uppercase font-bold text-slate-400 leading-none">Bill Payable</div>
+                <div class="mono text-lg sm:text-xl font-black text-emerald-400 leading-tight mt-0.5">₹<span id="bottomBarTotal">0.00</span></div>
+            </div>
+            <button id="saveCashBtn" type="button" class="col-span-4 py-3 px-2 rounded-2xl bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-950 font-black text-sm sm:text-base shadow-lg transition flex items-center justify-center gap-1.5">
+                <span>💵</span>
+                <span>CASH</span>
+            </button>
+            <button id="saveGpayBtn" type="button" class="col-span-4 py-3 px-2 rounded-2xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-black text-sm sm:text-base shadow-lg transition flex items-center justify-center gap-1.5">
+                <span>📱</span>
+                <span>GPAY</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 1: 8-DEVICE ROLE & PROFILE SELECTOR (1 ADMIN + 7 STAFF)       -->
+    <!-- =================================================================== -->
+    <div id="profileModal" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-3xl max-w-md w-full p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-black text-slate-900">Select Device Role (8-Device Fleet)</h3>
+                    <p class="text-[11px] text-slate-500 font-medium">1 Admin device + 7 Staff devices synced in real time.</p>
+                </div>
+                <button id="closeProfileModalBtn" type="button" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">✕</button>
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Step 1: Choose This Phone's Slot</label>
+                <div id="deviceSlotsGrid" class="grid grid-cols-2 gap-1.5"></div>
+            </div>
+
+            <div>
+                <label for="profileNameInput" class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Step 2: Staff / Counter Display Name</label>
+                <input id="profileNameInput" type="text" placeholder="e.g. Owner, Ramesh, Counter 2..." class="w-full rounded-xl border-2 border-slate-300 px-3 py-2 text-sm font-extrabold text-slate-900 focus:outline-none focus:border-emerald-500">
+            </div>
+
+            <div id="modalRoleInfoBox" class="rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-[11px] text-slate-700">
+                <strong>Admin Privileges (1 Device):</strong> Full POS billing, reports, add fruits/sub-columns, and approve/reject staff deletion requests.
+            </div>
+
+            <button id="saveProfileBtn" type="button" class="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md">
+                Activate Device Profile
+            </button>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 2: STAFF DELETION REQUEST MODAL                               -->
+    <!-- =================================================================== -->
+    <div id="requestDeleteModal" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-5 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-black text-slate-900">Request Admin Deletion</h3>
+                <button id="closeReqDelModalBtn" type="button" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">✕</button>
+            </div>
+
+            <div id="reqDelTargetSummary" class="rounded-2xl bg-slate-100 border border-slate-200 p-3 text-xs font-bold text-slate-800 space-y-1"></div>
+
+            <div class="space-y-1.5">
+                <label class="block text-[10px] font-extrabold uppercase text-slate-500">Quick Reason</label>
+                <div class="flex flex-wrap gap-1.5">
+                    <button type="button" data-delreason="Wrong Rate" class="quick-reason-btn px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-amber-100 text-[11px] font-extrabold text-slate-700">Wrong Rate</button>
+                    <button type="button" data-delreason="Wrong Qty" class="quick-reason-btn px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-amber-100 text-[11px] font-extrabold text-slate-700">Wrong Qty</button>
+                    <button type="button" data-delreason="Wrong Fruit" class="quick-reason-btn px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-amber-100 text-[11px] font-extrabold text-slate-700">Wrong Fruit</button>
+                    <button type="button" data-delreason="Duplicate Bill" class="quick-reason-btn px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-amber-100 text-[11px] font-extrabold text-slate-700">Duplicate Bill</button>
+                </div>
+                <input id="reqDelReasonInput" type="text" placeholder="Type reason for Admin..." class="w-full rounded-xl border-2 border-slate-300 px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-amber-500 mt-1">
+            </div>
+
+            <button id="submitDeleteRequestBtn" type="button" class="w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm shadow-md">
+                Send Deletion Request to Admin
+            </button>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 3: ADMIN PENDING DELETION REQUESTS APPROVAL QUEUE             -->
+    <!-- =================================================================== -->
+    <div id="adminRequestsQueueModal" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-5 shadow-2xl space-y-4 max-h-[88vh] flex flex-col">
+            <div class="flex items-center justify-between shrink-0">
+                <div>
+                    <h3 class="text-base font-black text-slate-900">Admin: Staff Deletion Requests</h3>
+                    <p class="text-[11px] text-slate-500 font-medium">Approve to permanently delete & recalculate bill/PLU totals.</p>
+                </div>
+                <button id="closeAdminQueueModalBtn" type="button" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">✕</button>
+            </div>
+
+            <div id="adminRequestsListContainer" class="flex-1 overflow-y-auto space-y-2.5 pr-1">
+                <div class="py-10 text-center text-xs text-slate-400 font-bold">No pending deletion requests.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 4: INSTALL APP ON PHONE (PWA + CLOUDFLARE + PWABUILDER APK)   -->
+    <!-- =================================================================== -->
+    <div id="installAppModal" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-3xl max-w-md w-full p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">📲</span>
+                    <h3 class="text-base font-black text-slate-900">Install Alpna Fruit POS App</h3>
+                </div>
+                <button id="closeInstallModalBtn" type="button" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">✕</button>
+            </div>
+
+            <div id="nativeInstallPromptBox" class="hidden rounded-2xl bg-emerald-50 border-2 border-emerald-400 p-3.5 space-y-2">
+                <div class="text-xs font-black text-emerald-900">Ready to Install Directly on This Phone!</div>
+                <button id="triggerNativeInstallBtn" type="button" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow">
+                    Install Alpna Fruit POS Now
+                </button>
+            </div>
+
+            <div class="space-y-2.5 text-xs text-slate-700">
+                <div class="rounded-2xl bg-slate-50 border border-slate-200 p-3 space-y-1">
+                    <div class="font-black text-slate-900">1. Android (Chrome):</div>
+                    <p>Tap the <strong>⋮ (3 dots)</strong> menu at top right → tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</p>
+                </div>
+                <div class="rounded-2xl bg-slate-50 border border-slate-200 p-3 space-y-1">
+                    <div class="font-black text-slate-900">2. iPhone / iPad (Safari):</div>
+                    <p>Tap the <strong>Share (□↑)</strong> icon at bottom → scroll down and tap <strong>"Add to Home Screen"</strong>.</p>
+                </div>
+                <div class="rounded-2xl bg-indigo-50 border border-indigo-200 p-3 space-y-1">
+                    <div class="font-black text-indigo-950">3. Host on pos.twiggg.in & Export Android .APK:</div>
+                    <p>Upload this single <code>index.html</code> file to <strong>Cloudflare Pages</strong> (<code>pos.twiggg.in</code>), then paste <code>https://pos.twiggg.in</code> into <strong>pwabuilder.com</strong> to generate a signed Android <code>.apk</code> file for WhatsApp.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 5: CLOUD SYNC CONFIG & 8-PHONE 1-TAP SETUP LINK GENERATOR     -->
+    <!-- =================================================================== -->
+    <div id="cloudConfigModal" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-3xl max-w-md w-full p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-black text-slate-900">☁️ 8-Phone Cloud Sync Setup</h3>
+                    <p class="text-[11px] text-slate-500 font-medium">Paste Firebase config once, then share the 1-tap link to all 8 phones.</p>
+                </div>
+                <button id="closeCloudConfigModalBtn" type="button" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">✕</button>
+            </div>
+
+            <div class="space-y-2">
+                <label for="firebaseConfigTextarea" class="block text-[10px] font-extrabold uppercase text-slate-500">Firebase Config JSON or JS Snippet</label>
+                <textarea id="firebaseConfigTextarea" rows="5" placeholder='{"apiKey": "...", "authDomain": "...", "projectId": "...", "storageBucket": "...", "messagingSenderId": "...", "appId": "..."}' class="w-full rounded-xl border-2 border-slate-300 p-2.5 mono text-[11px] text-slate-900 focus:outline-none focus:border-indigo-500"></textarea>
+                <p class="text-[10px] text-slate-500">Accepts pure JSON or <code>const firebaseConfig = { ... };</code> copied directly from Firebase Console.</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <button id="clearSavedCloudConfigBtn" type="button" class="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs">
+                    Reset Config
+                </button>
+                <button id="saveCloudConfigBtn" type="button" class="py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs shadow">
+                    Save & Connect Sync
+                </button>
+            </div>
+
+            <!-- 1-Tap 8-Phone Auto-Setup Link Box -->
+            <div id="shareSetupLinkSection" class="hidden rounded-2xl bg-emerald-50 border-2 border-emerald-300 p-3 space-y-2">
+                <div class="text-xs font-black text-emerald-950">🔗 Auto-Configure the Other 7 Phones</div>
+                <p class="text-[11px] text-emerald-800">Send this special link on WhatsApp to Staff 1–7. Opening it automatically configures their Firebase cloud sync without pasting anything:</p>
+                <button id="modalCopy8PhoneLinkBtn" type="button" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow">
+                    📋 Copy 8-Phone Setup Link
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 6: ADD CUSTOM FRUIT OR SUB-COLUMN (ADMIN ONLY)                -->
+    <!-- =================================================================== -->
+    <div id="addFruitModal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-5 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-black text-slate-900">Admin: Add Fruit or Sub-Column</h3>
+                <button id="closeAddFruitModalBtn" type="button" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">✕</button>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[11px] font-extrabold uppercase text-slate-500 mb-1">Main Fruit Category</label>
+                    <input id="customFruitNameInput" type="text" placeholder="e.g. APPLE or MANGO" class="w-full rounded-xl border-2 border-slate-300 px-3 py-2 text-sm font-extrabold uppercase text-slate-900 focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-extrabold uppercase text-slate-500 mb-1">Sub-Column / Variety Name</label>
+                    <input id="customSubColNameInput" type="text" placeholder="e.g. ROYAL GALA or BOX-MANGO" class="w-full rounded-xl border-2 border-slate-300 px-3 py-2 text-sm font-extrabold text-slate-900 focus:outline-none focus:border-emerald-500">
+                </div>
+            </div>
+
+            <button id="saveCustomFruitBtn" type="button" class="w-full py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-sm shadow-md">
+                Add to POS Terminal
+            </button>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODAL 7: CONFIRMATION DIALOG (NO WINDOW.CONFIRM)                    -->
+    <!-- =================================================================== -->
+    <div id="confirmActionModal" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-5 shadow-2xl space-y-4">
+            <h3 id="confirmModalTitle" class="text-base font-black text-slate-900">Confirm Admin Action</h3>
+            <p id="confirmModalMessage" class="text-xs text-slate-600 font-medium">Are you sure you want to proceed?</p>
+            <div class="grid grid-cols-2 gap-2">
+                <button id="confirmModalCancelBtn" type="button" class="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs">Cancel</button>
+                <button id="confirmModalProceedBtn" type="button" class="py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs">Yes, Proceed</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- PWA MANIFEST & OFFLINE SERVICE WORKER BOOTSTRAP SCRIPT              -->
+    <!-- =================================================================== -->
+    <script>
+        (function setupPwaManifestAndServiceWorker() {
+            const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                <rect width="512" height="512" rx="112" fill="#0f172a"/>
+                <circle cx="256" cy="276" r="145" fill="#10b981"/>
+                <path d="M256 132c0-42 36-74 78-74-4 42-36 74-78 74z" fill="#a3e635"/>
+                <text x="256" y="312" font-family="sans-serif" font-weight="900" font-size="112" fill="#0f172a" text-anchor="middle">POS</text>
+            </svg>`;
+            const iconDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgIcon);
+
+            const appleLink = document.getElementById('appleTouchIconLink');
+            const favLink = document.getElementById('faviconLink');
+            if (appleLink) appleLink.href = iconDataUrl;
+            if (favLink) favLink.href = iconDataUrl;
+
+            const cleanBaseUrl = window.location.origin + window.location.pathname;
+            const manifestObj = {
+                name: "Alpna Fruit POS",
+                short_name: "AlpnaPOS",
+                description: "8-Device Mobile POS, PLU Sales Report & Historical Bills for Alpna Fruit",
+                start_url: cleanBaseUrl,
+                scope: "./",
+                display: "standalone",
+                orientation: "portrait",
+                background_color: "#f8fafc",
+                theme_color: "#0f172a",
+                icons: [
+                    {
+                        src: iconDataUrl,
+                        sizes: "512x512",
+                        type: "image/svg+xml",
+                        purpose: "any maskable"
+                    }
+                ]
+            };
+
+            try {
+                const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+                const manifestUrl = URL.createObjectURL(manifestBlob);
+                const manifestLink = document.getElementById('dynamicManifestLink');
+                if (manifestLink) manifestLink.href = manifestUrl;
+            } catch (e) {}
+
+            if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
+                const swCode = `
+                    const CACHE_NAME = 'fruit-pos-pwa-v2';
+                    self.addEventListener('install', (e) => {
+                        self.skipWaiting();
+                    });
+                    self.addEventListener('activate', (e) => {
+                        e.waitUntil(self.clients.claim());
+                    });
+                    self.addEventListener('fetch', (e) => {
+                        if (e.request.method !== 'GET') return;
+                        e.respondWith(
+                            fetch(e.request).then((res) => {
+                                const copy = res.clone();
+                                caches.open(CACHE_NAME).then((cache) => cache.put(e.request, copy)).catch(() => {});
+                                return res;
+                            }).catch(() => caches.match(e.request))
+                        );
+                    });
+                `;
+                try {
+                    const swBlob = new Blob([swCode], { type: 'application/javascript' });
+                    const swUrl = URL.createObjectURL(swBlob);
+                    navigator.serviceWorker.register(swUrl).catch(() => {});
+                } catch (e) {}
+            }
+        })();
+    </script>
+
+    <!-- =================================================================== -->
+    <!-- EMBEDDED ALPNA-FRUIT FIREBASE CONFIGURATION (OUT-OF-THE-BOX SYNC)   -->
+    <!-- =================================================================== -->
+    <script>
+        window.__firebase_config = JSON.stringify({
+            apiKey: "AIzaSyC-VgXIoPv2BNURDC8ABV9E88kZxIG8rx4",
+            authDomain: "alpna-fruit.firebaseapp.com",
+            projectId: "alpna-fruit",
+            storageBucket: "alpna-fruit.firebasestorage.app",
+            messagingSenderId: "498914375272",
+            appId: "1:498914375272:web:f3a4676d0ba6660695eddd",
+            measurementId: "G-3106YN2PED"
+        });
+    </script>
+
+    <!-- =================================================================== -->
+    <!-- MAIN POS APPLICATION SCRIPT                                         -->
+    <!-- =================================================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // -----------------------------------------------------------------
+        // 1. 8-DEVICE FLEET DEFINITION (1 ADMIN + 7 STAFF)
+        // -----------------------------------------------------------------
+        const DEVICE_SLOTS = [
+            { slotId: "ADMIN", deviceNumber: 1, role: "Admin", defaultName: "Owner" },
+            { slotId: "STAFF_1", deviceNumber: 2, role: "Staff 1", defaultName: "Staff 1" },
+            { slotId: "STAFF_2", deviceNumber: 3, role: "Staff 2", defaultName: "Staff 2" },
+            { slotId: "STAFF_3", deviceNumber: 4, role: "Staff 3", defaultName: "Staff 3" },
+            { slotId: "STAFF_4", deviceNumber: 5, role: "Staff 4", defaultName: "Staff 4" },
+            { slotId: "STAFF_5", deviceNumber: 6, role: "Staff 5", defaultName: "Staff 5" },
+            { slotId: "STAFF_6", deviceNumber: 7, role: "Staff 6", defaultName: "Staff 6" },
+            { slotId: "STAFF_7", deviceNumber: 8, role: "Staff 7", defaultName: "Staff 7" }
+        ];
+
+        // -----------------------------------------------------------------
+        // 2. ALL 37 TERMINAL FRUIT CATEGORIES & EXACT SUB-COLUMNS
+        // -----------------------------------------------------------------
+        const DEFAULT_FRUIT_CATALOG = [
+            {
+                fruit: "APPLE",
+                color: "bg-slate-800 text-white",
+                subColumns: [
+                    "AP-DILLISAN", "IMP APPLE(RG)", "BOX-IMP-APPLE(RG)", "BOX-IMP-APPLE(RD)",
+                    "AP-DILLISAN PETI", "IMP-APPLE-PLATE", "IND-APPLE-PLATE", "AP-IRAN KERAT",
+                    "BOX-IMP-APPLE(GREEN)", "AP-ROCKET", "AP-Kandision", "AP-DILLISAN (2)"
+                ]
+            },
+            {
+                fruit: "MOSAMBI",
+                color: "bg-slate-700 text-white",
+                subColumns: ["NAVOBAR", "JUNOBAR"]
+            },
+            {
+                fruit: "PINEAPPLE",
+                color: "bg-emerald-800 text-white",
+                subColumns: ["Pineapple (6pcs)", "Pineapple (20pcs)", "PINEAPPLE-LOOSE"]
+            },
+            {
+                fruit: "KIWI",
+                color: "bg-stone-700 text-white",
+                subColumns: ["KV-GREEN", "KV-GOLD", "BOX-GREEN KV", "BOX-GOLD KV"]
+            },
+            {
+                fruit: "GRAPES",
+                color: "bg-zinc-800 text-white",
+                subColumns: [
+                    "GP-BLACK", "GP-GREEN", "FLAM", "IMP. GRAPES",
+                    "GP-BLACK-BOX", "GP-BLACK KERAT", "GP-GREEN KERAT", "GP-GREEN-BOX"
+                ]
+            },
+            {
+                fruit: "SANTRA",
+                color: "bg-blue-900 text-white",
+                subColumns: ["SANTRA", "SANTRA-KERAT", "SANTRA-BOX"]
+            },
+            {
+                fruit: "MALTA",
+                color: "bg-neutral-800 text-white",
+                subColumns: ["MALTA", "MALTA-KERAT", "MALTA-BOX"]
+            },
+            {
+                fruit: "PEAR",
+                color: "bg-amber-900 text-white",
+                subColumns: ["PECKAM", "BEAUTY", "BOX-PEKAM", "BOX-BEAUTY"]
+            },
+            {
+                fruit: "DRAGON",
+                color: "bg-emerald-950 text-white",
+                subColumns: ["DG-RED", "DG-WHITE", "DG-RED-BOX", "DG-WHITE-BOX", "DG-INDIAN", "DG-INDIAN - BOX"]
+            },
+            {
+                fruit: "BLUE BERRY",
+                color: "bg-green-800 text-white",
+                subColumns: ["BLUEBERRY", "BB-BOX", "Blueberry - SPL", "BB - BOX (SPL)"]
+            },
+            {
+                fruit: "ORANGE",
+                color: "bg-lime-900 text-white",
+                subColumns: ["ORANGE", "MINI-ORANGE", "ORANGE-BOX", "BOX-MINI-ORANGE"]
+            },
+            {
+                fruit: "ANAR",
+                color: "bg-green-900 text-white",
+                subColumns: ["ANAR", "BOX-ANAR", "ANAR-KERAT"]
+            },
+            {
+                fruit: "IMPORTED FRUITS",
+                color: "bg-indigo-950 text-white",
+                subColumns: [
+                    "Rambutan (250g)", "Rambutan (500g)", "LOGAN LICHI", "MANGOSTEEN",
+                    "STAR FRUIT", "HONEY - PINEAPPLE", "PASSION FRUIT", "GRAPE FRUIT", "GOLDEN BERRY"
+                ]
+            },
+            {
+                fruit: "WATERMELON",
+                color: "bg-neutral-900 text-white",
+                subColumns: ["WATERMELON", "BACHKU-WATERMELON", "WATERMELON - PLATE"]
+            },
+            {
+                fruit: "STRAWBERRY",
+                color: "bg-purple-900 text-white",
+                subColumns: ["STRAWBERRY", "ST-PLATE", "ST BOX", "ST - LOOSE", "ST - KERAT"]
+            },
+            {
+                fruit: "CHERRY",
+                color: "bg-cyan-950 text-white",
+                subColumns: ["CHERRY", "BOX-CHERRY", "IMP - CHERRY"]
+            },
+            {
+                fruit: "SHERONI",
+                color: "bg-slate-600 text-white",
+                subColumns: ["SHERONI", "BOX-SHERONI"]
+            },
+            {
+                fruit: "AVACADO",
+                color: "bg-teal-900 text-white",
+                subColumns: ["AVACADO", "BOX-AVACADO"]
+            },
+            {
+                fruit: "CHIKU",
+                color: "bg-stone-800 text-white",
+                subColumns: ["CHIKU", "KERAT-CHIKU"]
+            },
+            {
+                fruit: "AMBLI",
+                color: "bg-amber-950 text-white",
+                subColumns: ["AMBLI"]
+            },
+            {
+                fruit: "JAMFAI",
+                color: "bg-violet-900 text-white",
+                subColumns: [
+                    "JAMFEL-RED", "JAMFEL-WHITE", "JAMFEL-PINK",
+                    "BOX-RED-JAMFEL", "BOX-WHITE-JAMFEL", "BOX-PINK-JAMFEL"
+                ]
+            },
+            {
+                fruit: "KHAREK",
+                color: "bg-purple-950 text-white",
+                subColumns: [
+                    "MEDJOUL DATES", "KIMIA DATES", "KALMI DATES", "KIMIA DATES BOX",
+                    "KHAREK", "KHAREK - BOX", "AJWA - DATES", "CHOCO - DATES"
+                ]
+            },
+            {
+                fruit: "ANJIR",
+                color: "bg-indigo-900 text-white",
+                subColumns: ["ANJIR"]
+            },
+            {
+                fruit: "HAFUS",
+                color: "bg-yellow-900 text-white",
+                subColumns: ["HAFUS", "PETI-HAFUS", "HAFUS-PLATE", "Bhavani"]
+            },
+            {
+                fruit: "KESAR",
+                color: "bg-orange-900 text-white",
+                subColumns: ["KESAR", "BOX-KESAR(5kg)", "BOX-KESAR(10kg)"]
+            },
+            {
+                fruit: "LALBAAG",
+                color: "bg-slate-800 text-white",
+                subColumns: ["Lalbag", "KERAT-LALBAG", "BOX-LALBAAG"]
+            },
+            {
+                fruit: "TETI",
+                color: "bg-emerald-800 text-white",
+                subColumns: ["TETI", "BOX-TETI", "TETI-KERAT"]
+            },
+            {
+                fruit: "mix fruit",
+                color: "bg-zinc-800 text-white",
+                subColumns: ["mix fruit", "BANANA-KERET", "BANANA"]
+            },
+            {
+                fruit: "PLUM",
+                color: "bg-sky-900 text-white",
+                subColumns: ["PLUM", "PLUM - PETI", "PLUM-BOX"]
+            },
+            {
+                fruit: "BADAM",
+                color: "bg-green-900 text-white",
+                subColumns: ["BADAM", "BADAM-KERAT"]
+            },
+            {
+                fruit: "LICHI",
+                color: "bg-rose-900 text-white",
+                subColumns: ["LICHI", "LICHI - BOX", "LICHI-KERAT"]
+            },
+            {
+                fruit: "PEACH",
+                color: "bg-stone-700 text-white",
+                subColumns: ["PEACH-DABI", "PEACH-BOX", "PEACH"]
+            },
+            {
+                fruit: "APRICOT",
+                color: "bg-blue-900 text-white",
+                subColumns: ["APRICOT - DABI", "APRICOT - KERAT"]
+            },
+            {
+                fruit: "SITAFAL",
+                color: "bg-indigo-950 text-white",
+                subColumns: ["SITAFAL", "SITAFAL - BOX"]
+            },
+            {
+                fruit: "AA",
+                color: "bg-blue-800 text-white",
+                subColumns: ["AA"]
+            },
+            {
+                fruit: "JUICE",
+                color: "bg-cyan-900 text-white",
+                subColumns: ["JUICE-CAN", "JUICE-BOX"]
+            },
+            {
+                fruit: "kerat",
+                color: "bg-emerald-950 text-white",
+                subColumns: ["khali"]
+            }
+        ];
+
+        const EXACT_TERMINAL_PLU_CODES = {
+            "AP-DILLISAN": 1,
+            "IMP APPLE(RG)": 2,
+            "KV-GREEN": 5,
+            "KV-GOLD": 6,
+            "NAVOBAR": 8,
+            "GP-GREEN": 13,
+            "IMP. GRAPES": 15,
+            "SANTRA": 16,
+            "MALTA": 17,
+            "DG-RED": 18,
+            "BLUEBERRY": 20,
+            "MINI-ORANGE": 22,
+            "ANAR": 23,
+            "WATERMELON": 24,
+            "AVACADO": 28,
+            "CHIKU": 29,
+            "JAMFEL-RED": 31,
+            "ANJIR": 34,
+            "PECKAM": 39,
+            "mix fruit": 72,
+            "PINEAPPLE-LOOSE": 77,
+            "KIMIA DATES": 101
+        };
+
+        const PLU_CODE_BY_SUBCOL = {};
+        function rebuildPluCodeMap(catalog) {
+            const usedCodes = new Set(Object.values(EXACT_TERMINAL_PLU_CODES));
+            Object.entries(EXACT_TERMINAL_PLU_CODES).forEach(([k, v]) => {
+                PLU_CODE_BY_SUBCOL[k] = v;
+            });
+            let nextCode = 102;
+            catalog.forEach(cat => {
+                cat.subColumns.forEach(sub => {
+                    if (!PLU_CODE_BY_SUBCOL[sub]) {
+                        while (usedCodes.has(nextCode)) nextCode++;
+                        PLU_CODE_BY_SUBCOL[sub] = nextCode;
+                        usedCodes.add(nextCode);
+                        nextCode++;
+                    }
+                });
+            });
+        }
+
+        // -----------------------------------------------------------------
+        // 3. STATE & STORAGE KEYS
+        // -----------------------------------------------------------------
+        const LOCAL_CATALOG_KEY = 'fruit_pos_custom_catalog_v4';
+        const LOCAL_BILLS_KEY = 'fruit_pos_synced_bills_v4';
+        const LOCAL_DEVICE_CONFIG_KEY = 'fruit_pos_device_config_v4';
+        const LOCAL_DEL_REQS_KEY = 'fruit_pos_del_requests_v4';
+        const LOCAL_FIREBASE_CFG_KEY = 'fruit_pos_user_firebase_cfg_v4';
+
+        let fruitCatalog = loadFruitCatalog();
+        rebuildPluCodeMap(fruitCatalog);
+
+        let deviceConfig = loadDeviceConfig();
+        let pendingModalSlotId = deviceConfig.slotId;
+
+        let selectedFruitObj = null;
+        let selectedSubColumn = null;
+        let selectedUnit = 'Kg';
+        let gstPercent = 0;
+        let isRefundMode = false;
+
+        let activeCart = [];
+        let syncedBills = [];
+        let deletionRequests = [];
+        let activeFleetDevices = {};
+        let selectedHistoricalBillId = null;
+        let pendingDeleteRequestDraft = null;
+        let confirmCallback = null;
+        let deferredInstallPrompt = null;
+
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        let isCloudConnected = false;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'alpna-fruit-pos';
+        const syncChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('fruit_pos_sync_channel_v4') : null;
+
+        function loadDeviceConfig() {
+            try {
+                const raw = localStorage.getItem(LOCAL_DEVICE_CONFIG_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && parsed.slotId) return parsed;
+                }
+            } catch (e) {}
+            return { slotId: "ADMIN", deviceNumber: 1, role: "Admin", profileName: "Owner" };
+        }
+
+        function saveDeviceConfig(cfg) {
+            deviceConfig = cfg;
+            localStorage.setItem(LOCAL_DEVICE_CONFIG_KEY, JSON.stringify(cfg));
+            applyDeviceRoleUI();
+            announceDeviceHeartbeat();
+        }
+
+        function isCurrentDeviceAdmin() {
+            return deviceConfig.slotId === 'ADMIN' || deviceConfig.role === 'Admin';
+        }
+
+        function loadFruitCatalog() {
+            try {
+                const raw = localStorage.getItem(LOCAL_CATALOG_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed) && parsed.length >= 37) return parsed;
+                }
+            } catch (e) {}
+            return JSON.parse(JSON.stringify(DEFAULT_FRUIT_CATALOG));
+        }
+
+        function persistFruitCatalog() {
+            try {
+                localStorage.setItem(LOCAL_CATALOG_KEY, JSON.stringify(fruitCatalog));
+                rebuildPluCodeMap(fruitCatalog);
+            } catch (e) {}
+        }
+
+        function loadLocalBills() {
+            try {
+                const raw = localStorage.getItem(LOCAL_BILLS_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) return parsed;
+                }
+            } catch (e) {}
+            return [];
+        }
+
+        function persistLocalBills(bills) {
+            try {
+                localStorage.setItem(LOCAL_BILLS_KEY, JSON.stringify(bills));
+                if (syncChannel) syncChannel.postMessage({ type: 'SYNC_UPDATE' });
+            } catch (e) {}
+        }
+
+        function loadLocalDeletionRequests() {
+            try {
+                const raw = localStorage.getItem(LOCAL_DEL_REQS_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) return parsed;
+                }
+            } catch (e) {}
+            return [];
+        }
+
+        function persistLocalDeletionRequests(reqs) {
+            try {
+                localStorage.setItem(LOCAL_DEL_REQS_KEY, JSON.stringify(reqs));
+                if (syncChannel) syncChannel.postMessage({ type: 'SYNC_UPDATE' });
+            } catch (e) {}
+        }
+
+        // -----------------------------------------------------------------
+        // 4. 8-PHONE SETUP LINK HASH (#cfg=...) ENCODER / DECODER
+        // -----------------------------------------------------------------
+        function extractConfigFromUrlHash() {
+            try {
+                const hash = window.location.hash || '';
+                const match = hash.match(/cfg=([A-Za-z0-9\-_=%]+)/);
+                if (!match) return null;
+                const decodedStr = decodeURIComponent(atob(decodeURIComponent(match[1])));
+                const parsed = JSON.parse(decodedStr);
+                if (parsed && parsed.apiKey && parsed.projectId) {
+                    localStorage.setItem(LOCAL_FIREBASE_CFG_KEY, JSON.stringify(parsed, null, 2));
+                    history.replaceState(null, '', window.location.pathname + window.location.search);
+                    return parsed;
+                }
+            } catch (e) {}
+            return null;
+        }
+
+        function build8PhoneSetupUrl() {
+            const raw = localStorage.getItem(LOCAL_FIREBASE_CFG_KEY);
+            if (!raw) return null;
+            try {
+                const parsed = JSON.parse(raw);
+                const encoded = btoa(encodeURIComponent(JSON.stringify(parsed)));
+                const base = window.location.origin + window.location.pathname;
+                return `${base}#cfg=${encoded}`;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function update8PhoneSetupButtonsVisibility() {
+            const hasSavedCfg = Boolean(localStorage.getItem(LOCAL_FIREBASE_CFG_KEY));
+            const topBtn = document.getElementById('copy8PhoneSetupLinkBtn');
+            const modalBox = document.getElementById('shareSetupLinkSection');
+            if (hasSavedCfg) {
+                topBtn.classList.remove('hidden');
+                modalBox.classList.remove('hidden');
+            } else {
+                topBtn.classList.add('hidden');
+                modalBox.classList.add('hidden');
+            }
+        }
+
+        function copyTextFallback(text, successMsg) {
+            const temp = document.createElement('textarea');
+            temp.value = text;
+            document.body.appendChild(temp);
+            temp.select();
+            try {
+                document.execCommand('copy');
+                showToast(successMsg);
+            } catch (e) {
+                showToast('Could not copy automatically', 'error');
+            }
+            document.body.removeChild(temp);
+        }
+
+        function getTodayIsoDate() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        function getYesterdayIsoDate() {
+            const d = new Date();
+            d.setDate(d.getDate() - 1);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        function formatTerminalDateTime(dateObj) {
+            const dd = String(dateObj.getDate()).padStart(2, '0');
+            const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const yyyy = dateObj.getFullYear();
+            const hh = String(dateObj.getHours()).padStart(2, '0');
+            const min = String(dateObj.getMinutes()).padStart(2, '0');
+            return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+        }
+
+        function generateNextSequentialReceipt() {
+            let maxSeq = 70443;
+            syncedBills.forEach(b => {
+                const raw = String(b.rcptNo || b.billNumber || '');
+                const match = raw.match(/(\d{6})$/);
+                if (match) {
+                    const num = parseInt(match[1], 10);
+                    if (!isNaN(num) && num > maxSeq) maxSeq = num;
+                }
+            });
+            const nextNum = maxSeq + 1;
+            const shortRcptNo = String(nextNum).padStart(6, '0');
+            return { rcptNo: `01-${shortRcptNo}`, shortRcptNo };
+        }
+
+        function getBillDisplayRcptNo(bill, fallbackIndex = 0) {
+            if (bill.rcptNo) return bill.rcptNo;
+            if (bill.billNumber && /^01-\d{6}$/.test(bill.billNumber)) return bill.billNumber;
+            const digits = String(bill.billNumber || bill.createdAtMs || (70444 + fallbackIndex)).replace(/\D/g, '').slice(-6).padStart(6, '0');
+            return `01-${digits}`;
+        }
+
+        function getBillShortRcptNo(bill, fallbackIndex = 0) {
+            if (bill.shortRcptNo) return bill.shortRcptNo;
+            return getBillDisplayRcptNo(bill, fallbackIndex).replace(/^01-/, '');
+        }
+
+        function getBillTerminalDateTime(bill) {
+            if (bill.terminalDateTime) return bill.terminalDateTime;
+            if (bill.timestamp) {
+                const d = new Date(bill.timestamp);
+                if (!isNaN(d.getTime())) return formatTerminalDateTime(d);
+            }
+            return `${bill.date || ''} ${bill.time || ''}`.trim();
+        }
+
+        function getBillClerkBadgeText(bill) {
+            const role = bill.deviceRole || 'Admin';
+            const name = bill.profileName || 'Owner';
+            return role.toLowerCase() === name.toLowerCase() ? role : `${role} (${name})`;
+        }
+
+        function formatCurrency(val) {
+            const num = Number(val) || 0;
+            return num % 1 === 0 ? num.toLocaleString('en-IN') : num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const bgClass = type === 'error'
+                ? 'bg-rose-600 text-white'
+                : (type === 'info' ? 'bg-slate-800 text-white' : 'bg-emerald-600 text-white');
+            toast.className = `${bgClass} px-4 py-2.5 rounded-2xl shadow-xl text-xs font-extrabold text-center transition-all duration-300`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 2600);
+        }
+
+        function openConfirmDialog(title, message, onProceed) {
+            document.getElementById('confirmModalTitle').textContent = title;
+            document.getElementById('confirmModalMessage').textContent = message;
+            confirmCallback = onProceed;
+            document.getElementById('confirmActionModal').classList.remove('hidden');
+        }
+
+        function updateClock() {
+            document.getElementById('liveClockText').textContent = formatTerminalDateTime(new Date());
+        }
+
+        // -----------------------------------------------------------------
+        // 5. ROLE-BASED UI & PENDING DELETION REQUEST BADGES
+        // -----------------------------------------------------------------
+        function getPendingDeletionRequests() {
+            return deletionRequests.filter(r => r.status === 'PENDING');
+        }
+
+        function applyDeviceRoleUI() {
+            const isAdmin = isCurrentDeviceAdmin();
+            const roleBadge = document.getElementById('roleHeaderBadge');
+            roleBadge.textContent = deviceConfig.role.toUpperCase();
+            roleBadge.className = isAdmin
+                ? 'px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase bg-amber-400 text-slate-950'
+                : 'px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase bg-sky-400 text-slate-950';
+
+            document.getElementById('deviceSlotHeaderLabel').textContent = `Dev ${deviceConfig.deviceNumber}/8`;
+            document.getElementById('activeProfileDisplay').textContent = deviceConfig.profileName;
+            document.getElementById('receiptRoleTag').textContent = deviceConfig.role;
+            document.getElementById('receiptClerkLabel').textContent = deviceConfig.profileName;
+            document.getElementById('adminPanelCurrentRole').textContent = `${deviceConfig.role} (${deviceConfig.profileName})`;
+
+            document.querySelectorAll('.admin-only-control').forEach(el => {
+                if (isAdmin) el.classList.remove('hidden');
+                else el.classList.add('hidden');
+            });
+
+            const adminCard = document.getElementById('adminManagementCard');
+            const staffNotice = document.getElementById('staffLockedNoticeCard');
+            if (isAdmin) {
+                adminCard.classList.remove('hidden');
+                staffNotice.classList.add('hidden');
+            } else {
+                adminCard.classList.add('hidden');
+                staffNotice.classList.remove('hidden');
+            }
+
+            updateDeletionRequestsBadges();
+            updateFleetCounterDisplay();
+        }
+
+        function updateDeletionRequestsBadges() {
+            const pending = getPendingDeletionRequests();
+            const count = pending.length;
+            const isAdmin = isCurrentDeviceAdmin();
+
+            const headerAlertBtn = document.getElementById('adminDelReqAlertBtn');
+            const hbStrip = document.getElementById('hbAdminPendingStrip');
+            document.getElementById('adminDelReqCount').textContent = count;
+            document.getElementById('adminPanelDelReqCount').textContent = count;
+
+            if (isAdmin && count > 0) {
+                headerAlertBtn.classList.remove('hidden');
+                headerAlertBtn.classList.add('inline-flex');
+                hbStrip.classList.remove('hidden');
+                document.getElementById('hbAdminPendingText').textContent = `${count} staff deletion request${count === 1 ? '' : 's'} awaiting your Admin approval.`;
+            } else {
+                headerAlertBtn.classList.add('hidden');
+                headerAlertBtn.classList.remove('inline-flex');
+                hbStrip.classList.add('hidden');
+            }
+        }
+
+        function updateFleetCounterDisplay() {
+            const nowMs = Date.now();
+            const activeSlots = new Set([deviceConfig.slotId]);
+            Object.values(activeFleetDevices).forEach(dev => {
+                if (dev && dev.slotId && (nowMs - (dev.lastSeenMs || 0)) < 1000 * 60 * 60 * 12) {
+                    activeSlots.add(dev.slotId);
+                }
+            });
+            const count = Math.min(8, Math.max(1, activeSlots.size));
+            document.getElementById('fleetCounterBadge').textContent = `${count}/8 Devices`;
+        }
+
+        async function announceDeviceHeartbeat() {
+            const payload = {
+                slotId: deviceConfig.slotId,
+                deviceNumber: deviceConfig.deviceNumber,
+                role: deviceConfig.role,
+                profileName: deviceConfig.profileName,
+                lastSeenMs: Date.now()
+            };
+            activeFleetDevices[deviceConfig.slotId] = payload;
+            updateFleetCounterDisplay();
+
+            if (isCloudConnected && db && currentUser) {
+                try {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'fruit_devices', deviceConfig.slotId), payload);
+                } catch (e) {}
+            }
+        }
+
+        function renderDeviceSlotsModal() {
+            const grid = document.getElementById('deviceSlotsGrid');
+            grid.innerHTML = DEVICE_SLOTS.map(slot => {
+                const isSelected = pendingModalSlotId === slot.slotId;
+                const isAdminSlot = slot.slotId === 'ADMIN';
+                const liveInfo = activeFleetDevices[slot.slotId];
+                const subText = liveInfo && liveInfo.profileName ? liveInfo.profileName : slot.defaultName;
+
+                let btnStyle = isSelected
+                    ? (isAdminSlot
+                        ? 'bg-amber-400 text-slate-950 border-amber-500 ring-2 ring-amber-400 font-black'
+                        : 'bg-emerald-600 text-white border-emerald-700 ring-2 ring-emerald-500 font-black')
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200 font-bold';
+
+                return `
+                    <button type="button" data-slotid="${slot.slotId}" class="slot-pick-btn ${btnStyle} border p-2.5 rounded-2xl text-left transition flex items-center justify-between gap-1">
+                        <div class="min-w-0">
+                            <div class="text-xs font-black truncate">${escapeHtml(slot.role)}</div>
+                            <div class="text-[10px] opacity-80 truncate">Dev ${slot.deviceNumber}/8 • ${escapeHtml(subText)}</div>
+                        </div>
+                        <span class="text-[9px] font-black px-1.5 py-0.5 rounded ${isAdminSlot ? 'bg-slate-900 text-amber-300' : 'bg-black/15'}">
+                            ${isAdminSlot ? 'ADMIN' : `S${slot.deviceNumber - 1}`}
+                        </span>
+                    </button>
+                `;
+            }).join('');
+
+            grid.querySelectorAll('.slot-pick-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    pendingModalSlotId = btn.dataset.slotid;
+                    const slotObj = DEVICE_SLOTS.find(s => s.slotId === pendingModalSlotId);
+                    const liveInfo = activeFleetDevices[pendingModalSlotId];
+                    document.getElementById('profileNameInput').value = (liveInfo && liveInfo.profileName) || (slotObj ? slotObj.defaultName : '');
+
+                    const infoBox = document.getElementById('modalRoleInfoBox');
+                    if (pendingModalSlotId === 'ADMIN') {
+                        infoBox.className = 'rounded-xl bg-amber-50 border border-amber-200 p-2.5 text-[11px] text-slate-700';
+                        infoBox.innerHTML = '<strong>Admin Privileges (1 Device):</strong> Full POS billing, reports, add fruits/sub-columns, and approve/reject staff deletion requests.';
+                    } else {
+                        infoBox.className = 'rounded-xl bg-sky-50 border border-sky-200 p-2.5 text-[11px] text-slate-700';
+                        infoBox.innerHTML = `<strong>${escapeHtml(slotObj.role)} Privileges (Staff Device):</strong> Fast multi-item billing (CASH / GPAY), reports, and requesting entry deletions from Admin.`;
+                    }
+                    renderDeviceSlotsModal();
+                });
+            });
+        }
+
+        // -----------------------------------------------------------------
+        // 6. STEP 1–4: NATIVE KEYBOARD INPUTS & 37 FRUIT CATEGORIES
+        // -----------------------------------------------------------------
+        function detectDefaultUnit(subColName) {
+            const upper = String(subColName || '').toUpperCase();
+            if (upper.includes('BOX')) return 'Box';
+            if (upper.includes('KERAT') || upper.includes('KERET') || upper === 'KHALI') return 'Kerat';
+            if (upper.includes('PETI')) return 'Peti';
+            if (upper.includes('PLATE')) return 'Plate';
+            if (upper.includes('DABI')) return 'Dabi';
+            if (upper.includes('CAN')) return 'Can';
+            if (upper.includes('PCS')) return 'Pcs';
+            return 'Kg';
+        }
+
+        function setSelectedUnit(unit) {
+            selectedUnit = unit;
+            document.getElementById('qtyUnitLabel').textContent = unit;
+            document.getElementById('rateUnitLabel').textContent = unit;
+            document.getElementById('rateBadgeUnit').textContent = unit.toUpperCase();
+            document.getElementById('rateUnitHint').textContent = unit;
+
+            document.querySelectorAll('.unit-pill-btn').forEach(btn => {
+                btn.className = btn.dataset.unit === unit
+                    ? 'unit-pill-btn px-2.5 py-1 rounded-xl text-xs font-extrabold bg-emerald-600 text-white shadow-sm'
+                    : 'unit-pill-btn px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200';
+            });
+            updateLiveLineCalculation();
+        }
+
+        function updateLiveLineCalculation() {
+            const qty = parseFloat(document.getElementById('qtyInput').value) || 0;
+            const rate = parseFloat(document.getElementById('rateInput').value) || 0;
+            const sign = isRefundMode ? -1 : 1;
+            const lineTotal = Math.round(qty * rate * sign * 100) / 100;
+
+            document.getElementById('calcFormulaPreview').textContent = `${qty} ${selectedUnit} × ₹${formatCurrency(rate)}/${selectedUnit}`;
+            document.getElementById('calcLineTotalPreview').textContent = formatCurrency(lineTotal);
+        }
+
+        function renderFruitCategories() {
+            const query = (document.getElementById('fruitSearchInput').value || '').trim().toLowerCase();
+            const grid = document.getElementById('fruitCategoriesGrid');
+            document.getElementById('fruitCountLabel').textContent = fruitCatalog.length;
+
+            const filtered = fruitCatalog.filter(cat => {
+                if (!query) return true;
+                if (cat.fruit.toLowerCase().includes(query)) return true;
+                return cat.subColumns.some(sub => {
+                    const plu = String(PLU_CODE_BY_SUBCOL[sub] || '');
+                    return sub.toLowerCase().includes(query) || plu === query;
+                });
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-6 text-center text-xs text-slate-400 font-bold">No matching fruit or PLU found.</div>`;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(cat => {
+                const isSelected = selectedFruitObj && selectedFruitObj.fruit === cat.fruit;
+                const ringClass = isSelected ? 'ring-4 ring-lime-400 scale-[0.98]' : 'hover:opacity-95 active:scale-95';
+                return `
+                    <button type="button" data-fruit="${escapeHtml(cat.fruit)}" class="fruit-cat-btn ${cat.color} ${ringClass} py-3 px-2 rounded-xl font-black text-xs sm:text-sm tracking-wide uppercase shadow-sm transition flex flex-col items-center justify-center text-center min-h-[52px]">
+                        <span class="leading-tight">${escapeHtml(cat.fruit)}</span>
+                        <span class="text-[9px] font-semibold opacity-75 mt-0.5">${cat.subColumns.length} opt</span>
+                    </button>
+                `;
+            }).join('');
+
+            grid.querySelectorAll('.fruit-cat-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const found = fruitCatalog.find(c => c.fruit === btn.dataset.fruit);
+                    if (found) selectFruitCategory(found);
+                });
+            });
+        }
+
+        function selectFruitCategory(fruitObj) {
+            selectedFruitObj = fruitObj;
+            selectedSubColumn = null;
+
+            document.getElementById('builderFruitBadge').textContent = fruitObj.fruit;
+            document.getElementById('builderFruitBadge').className = 'px-2 py-0.5 rounded-lg bg-emerald-600 text-white font-black';
+            document.getElementById('builderSubColBadge').textContent = '2. Pick Sub-Column';
+            document.getElementById('builderSubColBadge').className = 'px-2 py-0.5 rounded-lg bg-amber-100 text-amber-800 font-extrabold';
+
+            document.getElementById('selectedFruitTitle').textContent = fruitObj.fruit;
+            document.getElementById('subColumnSection').classList.remove('hidden');
+            document.getElementById('qtyRateSection').classList.add('hidden');
+
+            renderFruitCategories();
+            renderSubColumns(fruitObj);
+
+            if (fruitObj.subColumns.length === 1) {
+                selectSubColumnItem(fruitObj.subColumns[0]);
+            }
+        }
+
+        function renderSubColumns(fruitObj) {
+            const container = document.getElementById('subColumnsGrid');
+            container.innerHTML = fruitObj.subColumns.map(sub => {
+                const isSelected = selectedSubColumn === sub;
+                const plu = PLU_CODE_BY_SUBCOL[sub] || '';
+                const btnClass = isSelected
+                    ? 'bg-lime-400 text-slate-950 border-lime-500 ring-2 ring-lime-500 font-black'
+                    : 'bg-indigo-900 hover:bg-indigo-800 text-white border-indigo-950 font-bold';
+                return `
+                    <button type="button" data-subcol="${escapeHtml(sub)}" class="subcol-btn ${btnClass} border py-2.5 px-2 rounded-xl text-[11px] sm:text-xs transition text-left flex items-center justify-between gap-1 shadow-sm">
+                        <span class="truncate">${escapeHtml(sub)}</span>
+                        <span class="mono text-[9px] opacity-75 shrink-0">#${plu}</span>
+                    </button>
+                `;
+            }).join('');
+
+            container.querySelectorAll('.subcol-btn').forEach(btn => {
+                btn.addEventListener('click', () => selectSubColumnItem(btn.dataset.subcol));
+            });
+        }
+
+        function selectSubColumnItem(subColName) {
+            selectedSubColumn = subColName;
+            document.getElementById('builderSubColBadge').textContent = subColName;
+            document.getElementById('builderSubColBadge').className = 'px-2 py-0.5 rounded-lg bg-indigo-600 text-white font-black';
+
+            setSelectedUnit(detectDefaultUnit(subColName));
+
+            const qtyEl = document.getElementById('qtyInput');
+            const rateEl = document.getElementById('rateInput');
+            qtyEl.value = '';
+            rateEl.value = '';
+            updateLiveLineCalculation();
+
+            document.getElementById('qtyRateSection').classList.remove('hidden');
+            if (selectedFruitObj) renderSubColumns(selectedFruitObj);
+
+            setTimeout(() => qtyEl.focus(), 50);
+        }
+
+        function resetActiveBuilder() {
+            selectedFruitObj = null;
+            selectedSubColumn = null;
+            document.getElementById('builderFruitBadge').textContent = '1. Pick Fruit Below';
+            document.getElementById('builderFruitBadge').className = 'px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800';
+            document.getElementById('builderSubColBadge').textContent = '2. Sub-Column';
+            document.getElementById('builderSubColBadge').className = 'px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500';
+            document.getElementById('subColumnSection').classList.add('hidden');
+            document.getElementById('qtyRateSection').classList.add('hidden');
+            document.getElementById('qtyInput').value = '';
+            document.getElementById('rateInput').value = '';
+            renderFruitCategories();
+        }
+
+        function appendLineToActiveReceipt() {
+            if (!selectedFruitObj || !selectedSubColumn) {
+                showToast('Select a Fruit and Sub-Column first', 'error');
+                return;
+            }
+            const qtyEl = document.getElementById('qtyInput');
+            const rateEl = document.getElementById('rateInput');
+            const rawQty = parseFloat(qtyEl.value);
+            const rawRate = parseFloat(rateEl.value);
+
+            if (isNaN(rawQty) || rawQty <= 0) {
+                showToast('Type a valid Quantity', 'error');
+                qtyEl.focus();
+                return;
+            }
+            if (isNaN(rawRate) || rawRate <= 0) {
+                showToast(`Type Rate for 1 ${selectedUnit} (₹)`, 'error');
+                rateEl.focus();
+                return;
+            }
+
+            const sign = isRefundMode ? -1 : 1;
+            const finalQty = Math.round(rawQty * sign * 1000) / 1000;
+            const finalAmount = Math.round(finalQty * rawRate * 100) / 100;
+            const pluCode = PLU_CODE_BY_SUBCOL[selectedSubColumn] || 999;
+
+            activeCart.push({
+                id: `line-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                pluCode: pluCode,
+                fruit: selectedFruitObj.fruit,
+                subColumn: selectedSubColumn,
+                quantity: finalQty,
+                unit: selectedUnit,
+                rate: rawRate,
+                amount: finalAmount
+            });
+
+            renderActiveReceipt();
+            showToast(`Added ${selectedSubColumn} (${finalQty} ${selectedUnit} × ₹${rawRate}) = ₹${formatCurrency(finalAmount)}`);
+
+            qtyEl.blur();
+            rateEl.blur();
+            resetActiveBuilder();
+        }
+
+        function renderActiveReceipt() {
+            const { rcptNo } = generateNextSequentialReceipt();
+            document.getElementById('nextReceiptNoLabel').textContent = `RcptNo: ${rcptNo}`;
+
+            const container = document.getElementById('activeReceiptLines');
+            if (activeCart.length === 0) {
+                container.innerHTML = `
+                    <div class="py-6 text-center text-xs text-slate-400 font-medium">
+                        No fruits added yet. Tap a fruit below to start billing.
+                    </div>
+                `;
+            } else {
+                container.innerHTML = activeCart.map((line, idx) => `
+                    <div class="grid grid-cols-12 items-center px-2.5 py-2 text-xs hover:bg-white">
+                        <div class="col-span-5 pr-1 min-w-0 flex items-center gap-1.5">
+                            <button type="button" data-remline="${line.id}" class="rem-cart-line-btn w-5 h-5 rounded-md bg-rose-100 hover:bg-rose-200 text-rose-700 font-black text-[10px] shrink-0">✕</button>
+                            <div class="min-w-0">
+                                <div class="font-black text-slate-900 truncate">${idx + 1}. ${escapeHtml(line.subColumn)}</div>
+                                <div class="text-[10px] font-bold text-slate-400 uppercase truncate">${escapeHtml(line.fruit)}</div>
+                            </div>
+                        </div>
+                        <div class="col-span-2 text-right mono font-bold text-slate-800">${line.quantity} <span class="text-[10px] text-slate-500">${escapeHtml(line.unit)}</span></div>
+                        <div class="col-span-2 text-right mono font-semibold text-slate-600">${formatCurrency(line.rate)}</div>
+                        <div class="col-span-3 text-right mono font-black ${line.amount < 0 ? 'text-rose-600' : 'text-slate-900'}">${formatCurrency(line.amount)}</div>
+                    </div>
+                `).join('');
+
+                container.querySelectorAll('.rem-cart-line-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        activeCart = activeCart.filter(l => l.id !== btn.dataset.remline);
+                        renderActiveReceipt();
+                    });
+                });
+            }
+
+            const totalQty = Math.round(activeCart.reduce((s, l) => s + l.quantity, 0) * 100) / 100;
+            const subtotal = Math.round(activeCart.reduce((s, l) => s + l.amount, 0) * 100) / 100;
+            const tax = Math.round(subtotal * (gstPercent / 100) * 100) / 100;
+            const grandTotal = Math.round((subtotal + tax) * 100) / 100;
+
+            document.getElementById('cartItemCount').textContent = activeCart.length;
+            document.getElementById('cartTotalQty').textContent = totalQty;
+            document.getElementById('cartSubtotal').textContent = formatCurrency(subtotal);
+            document.getElementById('cartTaxAmount').textContent = formatCurrency(tax);
+            document.getElementById('cartGrandTotal').textContent = formatCurrency(grandTotal);
+            document.getElementById('bottomBarTotal').textContent = formatCurrency(grandTotal);
+        }
+
+        // -----------------------------------------------------------------
+        // 7. INSTANT CHECKOUT (CASH / GPAY) & ADMIN-APPROVED DELETION
+        // -----------------------------------------------------------------
+        async function finalizeAndSaveBill(paymentMode) {
+            if (activeCart.length === 0) {
+                showToast('Add at least 1 fruit line before saving', 'error');
+                return;
+            }
+
+            const now = new Date();
+            const dateStr = getTodayIsoDate();
+            const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const terminalDateTime = formatTerminalDateTime(now);
+            const { rcptNo, shortRcptNo } = generateNextSequentialReceipt();
+
+            const totalQty = Math.round(activeCart.reduce((s, l) => s + (Number(l.quantity) || 0), 0) * 100) / 100;
+            const subtotal = Math.round(activeCart.reduce((s, l) => s + l.amount, 0) * 100) / 100;
+            const taxAmount = Math.round(subtotal * (gstPercent / 100) * 100) / 100;
+            const totalAmount = Math.round((subtotal + taxAmount) * 100) / 100;
+
+            const billPayload = {
+                rcptNo: rcptNo,
+                shortRcptNo: shortRcptNo,
+                billNumber: rcptNo,
+                timestamp: now.toISOString(),
+                createdAtMs: now.getTime(),
+                date: dateStr,
+                time: timeStr,
+                terminalDateTime: terminalDateTime,
+                deviceSlotId: deviceConfig.slotId,
+                deviceNumber: deviceConfig.deviceNumber,
+                deviceRole: deviceConfig.role,
+                profileName: deviceConfig.profileName,
+                paymentMode: paymentMode,
+                gstPercent: gstPercent,
+                taxAmount: taxAmount,
+                itemCount: activeCart.length,
+                totalQty: totalQty,
+                subtotal: subtotal,
+                totalAmount: totalAmount,
+                items: activeCart.map((it, idx) => ({
+                    lineId: it.id,
+                    lineNo: idx + 1,
+                    pluCode: it.pluCode || PLU_CODE_BY_SUBCOL[it.subColumn] || 999,
+                    fruit: it.fruit,
+                    subColumn: it.subColumn,
+                    quantity: it.quantity,
+                    unit: it.unit,
+                    rate: it.rate,
+                    ratePerUnit: it.rate,
+                    amount: it.amount
+                }))
+            };
+
+            const localRecord = { id: `local-${now.getTime()}`, ...billPayload };
+            const currentLocal = loadLocalBills();
+            currentLocal.unshift(localRecord);
+            persistLocalBills(currentLocal);
+            selectedHistoricalBillId = localRecord.id;
+
+            activeCart = [];
+            isRefundMode = false;
+            document.getElementById('refundModeBadge').classList.add('hidden');
+            renderActiveReceipt();
+            resetActiveBuilder();
+
+            if (isCloudConnected && db && currentUser) {
+                try {
+                    const billsColRef = collection(db, 'artifacts', appId, 'public', 'data', 'fruit_bills');
+                    const docRef = await addDoc(billsColRef, billPayload);
+                    selectedHistoricalBillId = docRef.id;
+                    showToast(`Saved ${rcptNo} • ₹${formatCurrency(totalAmount)} (${paymentMode})`);
+                } catch (err) {
+                    syncedBills = currentLocal;
+                    refreshAllViews();
+                    showToast(`Saved ${rcptNo} • ₹${formatCurrency(totalAmount)} (${paymentMode})`);
+                }
+            } else {
+                syncedBills = currentLocal;
+                refreshAllViews();
+                showToast(`Saved ${rcptNo} • ₹${formatCurrency(totalAmount)} (${paymentMode})`);
+            }
+        }
+
+        function openStaffRequestDeleteModal(bill, itemIndex = null) {
+            const rcptNo = getBillDisplayRcptNo(bill, 0);
+            const isFullBill = itemIndex === null || (bill.items && bill.items.length <= 1);
+            const targetItem = !isFullBill && bill.items ? bill.items[itemIndex] : null;
+
+            pendingDeleteRequestDraft = {
+                billId: bill.id,
+                rcptNo: rcptNo,
+                targetType: isFullBill ? 'BILL' : 'ITEM',
+                itemIndex: isFullBill ? null : itemIndex,
+                lineId: targetItem ? (targetItem.lineId || targetItem.id || null) : null,
+                itemDescription: isFullBill
+                    ? `Entire Bill (${(bill.items || []).length} items)`
+                    : `${targetItem.subColumn} (${targetItem.quantity} ${targetItem.unit} × ₹${formatCurrency(targetItem.rate)})`,
+                amount: isFullBill ? Number(bill.totalAmount || 0) : Number(targetItem.amount || 0)
+            };
+
+            document.getElementById('reqDelTargetSummary').innerHTML = `
+                <div class="text-[10px] uppercase text-slate-400">Receipt: <span class="mono text-slate-900 font-black">${escapeHtml(rcptNo)}</span></div>
+                <div class="text-xs font-black text-rose-700">${escapeHtml(pendingDeleteRequestDraft.itemDescription)}</div>
+                <div class="mono text-xs font-extrabold text-slate-700">Amount: ₹${formatCurrency(pendingDeleteRequestDraft.amount)}</div>
+            `;
+            document.getElementById('reqDelReasonInput').value = '';
+            document.getElementById('requestDeleteModal').classList.remove('hidden');
+        }
+
+        async function submitStaffDeletionRequest() {
+            if (!pendingDeleteRequestDraft) return;
+            const reason = (document.getElementById('reqDelReasonInput').value || '').trim() || 'Mistaken entry';
+            const now = new Date();
+
+            const reqPayload = {
+                ...pendingDeleteRequestDraft,
+                reason: reason,
+                requestedBySlot: deviceConfig.slotId,
+                requestedByRole: deviceConfig.role,
+                requestedByName: deviceConfig.profileName,
+                requestedAt: formatTerminalDateTime(now),
+                createdAtMs: now.getTime(),
+                status: 'PENDING'
+            };
+
+            const localReqs = loadLocalDeletionRequests();
+            const localItem = { id: `req-${now.getTime()}`, ...reqPayload };
+            localReqs.unshift(localItem);
+            persistLocalDeletionRequests(localReqs);
+
+            document.getElementById('requestDeleteModal').classList.add('hidden');
+            pendingDeleteRequestDraft = null;
+
+            if (isCloudConnected && db && currentUser) {
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'fruit_del_requests'), reqPayload);
+                } catch (e) {}
+            } else {
+                deletionRequests = localReqs;
+                updateDeletionRequestsBadges();
+                renderHistoricalBillTab();
+            }
+
+            showToast('Deletion request sent to Admin for approval', 'info');
+        }
+
+        async function executeDeletionOfBillOrLine(billId, targetType, itemIndex, lineId) {
+            const billIdx = syncedBills.findIndex(b => b.id === billId);
+            if (billIdx === -1) return;
+            const bill = syncedBills[billIdx];
+
+            if (targetType === 'BILL' || !bill.items || bill.items.length <= 1) {
+                const updatedLocal = loadLocalBills().filter(b => b.id !== billId);
+                persistLocalBills(updatedLocal);
+                syncedBills = syncedBills.filter(b => b.id !== billId);
+                if (selectedHistoricalBillId === billId) {
+                    selectedHistoricalBillId = syncedBills.length > 0 ? syncedBills[0].id : null;
+                }
+                if (isCloudConnected && db && currentUser && !String(billId).startsWith('local-')) {
+                    try {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'fruit_bills', billId));
+                    } catch (e) {}
+                }
+            } else {
+                const remainingItems = bill.items.filter((it, idx) => {
+                    if (lineId && (it.lineId === lineId || it.id === lineId)) return false;
+                    return idx !== itemIndex;
+                });
+
+                if (remainingItems.length === 0) {
+                    return executeDeletionOfBillOrLine(billId, 'BILL', null, null);
+                }
+
+                const newTotalQty = Math.round(remainingItems.reduce((s, l) => s + (Number(l.quantity) || 0), 0) * 100) / 100;
+                const newSubtotal = Math.round(remainingItems.reduce((s, l) => s + (Number(l.amount) || 0), 0) * 100) / 100;
+                const gstPct = Number(bill.gstPercent) || 0;
+                const newTax = Math.round(newSubtotal * (gstPct / 100) * 100) / 100;
+                const newTotal = Math.round((newSubtotal + newTax) * 100) / 100;
+
+                const updatedFields = {
+                    items: remainingItems,
+                    itemCount: remainingItems.length,
+                    totalQty: newTotalQty,
+                    subtotal: newSubtotal,
+                    taxAmount: newTax,
+                    totalAmount: newTotal
+                };
+
+                const updatedBill = { ...bill, ...updatedFields };
+                syncedBills[billIdx] = updatedBill;
+
+                const localList = loadLocalBills().map(b => b.id === billId ? updatedBill : b);
+                persistLocalBills(localList);
+
+                if (isCloudConnected && db && currentUser && !String(billId).startsWith('local-')) {
+                    try {
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'fruit_bills', billId), updatedFields);
+                    } catch (e) {}
+                }
+            }
+            refreshAllViews();
+        }
+
+        async function resolveDeletionRequestAdmin(reqId, decision) {
+            if (!isCurrentDeviceAdmin()) return;
+            const reqObj = deletionRequests.find(r => r.id === reqId);
+            if (!reqObj) return;
+
+            if (decision === 'APPROVED') {
+                await executeDeletionOfBillOrLine(reqObj.billId, reqObj.targetType, reqObj.itemIndex, reqObj.lineId);
+            }
+
+            const updatedReqs = loadLocalDeletionRequests().map(r => r.id === reqId ? { ...r, status: decision } : r);
+            persistLocalDeletionRequests(updatedReqs);
+            deletionRequests = deletionRequests.map(r => r.id === reqId ? { ...r, status: decision } : r);
+
+            if (isCloudConnected && db && currentUser && !String(reqId).startsWith('req-')) {
+                try {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'fruit_del_requests', reqId), {
+                        status: decision,
+                        resolvedAt: formatTerminalDateTime(new Date())
+                    });
+                } catch (e) {}
+            }
+
+            updateDeletionRequestsBadges();
+            renderAdminRequestsQueueModal();
+            refreshAllViews();
+            showToast(decision === 'APPROVED' ? 'Request Approved & Entry Deleted' : 'Deletion Request Rejected', decision === 'APPROVED' ? 'success' : 'info');
+        }
+
+        function renderAdminRequestsQueueModal() {
+            const container = document.getElementById('adminRequestsListContainer');
+            const pending = getPendingDeletionRequests();
+
+            if (pending.length === 0) {
+                container.innerHTML = `<div class="py-10 text-center text-xs text-slate-400 font-bold">No pending deletion requests.</div>`;
+                return;
+            }
+
+            container.innerHTML = pending.map(req => `
+                <div class="rounded-2xl border-2 border-rose-200 bg-rose-50/40 p-3 space-y-2">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="mono text-xs font-black text-slate-900">${escapeHtml(req.rcptNo)}</span>
+                        <span class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-black">
+                            ${escapeHtml(req.requestedByRole)} (${escapeHtml(req.requestedByName)})
+                        </span>
+                    </div>
+                    <div class="text-xs font-black text-rose-700">${escapeHtml(req.itemDescription)} — ₹${formatCurrency(req.amount)}</div>
+                    <div class="text-[11px] font-semibold text-slate-600">Reason: <strong>${escapeHtml(req.reason)}</strong> • <span class="mono">${escapeHtml(req.requestedAt)}</span></div>
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <button type="button" data-reqid="${escapeHtml(req.id)}" data-decision="REJECTED" class="resolve-del-req-btn py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-extrabold text-xs">
+                            ✕ Reject
+                        </button>
+                        <button type="button" data-reqid="${escapeHtml(req.id)}" data-decision="APPROVED" class="resolve-del-req-btn py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow">
+                            ✓ Approve & Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            container.querySelectorAll('.resolve-del-req-btn').forEach(btn => {
+                btn.addEventListener('click', () => resolveDeletionRequestAdmin(btn.dataset.reqid, btn.dataset.decision));
+            });
+        }
+
+        async function clearAllSalesDataAdmin() {
+            if (!isCurrentDeviceAdmin()) return;
+            const idsToDelete = syncedBills.map(b => b.id).filter(id => id && !String(id).startsWith('local-'));
+            persistLocalBills([]);
+            syncedBills = [];
+            selectedHistoricalBillId = null;
+            refreshAllViews();
+
+            if (isCloudConnected && db && currentUser) {
+                for (const docId of idsToDelete) {
+                    try {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'fruit_bills', docId));
+                    } catch (e) {}
+                }
+            }
+            showToast('All sales records cleared by Admin', 'info');
+        }
+
+        // -----------------------------------------------------------------
+        // 8. TAB 2: HISTORICAL BILL SPLIT-VIEW
+        // -----------------------------------------------------------------
+        function getHistoricalFilteredBills() {
+            const startDate = document.getElementById('hbStartDate').value;
+            const endDate = document.getElementById('hbEndDate').value;
+            const payMode = document.getElementById('hbPayFilter').value;
+            const q = (document.getElementById('hbSearchInput').value || '').trim().toLowerCase();
+
+            return syncedBills.filter((bill, idx) => {
+                if (startDate && bill.date && bill.date < startDate) return false;
+                if (endDate && bill.date && bill.date > endDate) return false;
+                if (payMode !== 'ALL' && bill.paymentMode !== payMode) return false;
+
+                if (q) {
+                    const rcpt = getBillDisplayRcptNo(bill, idx).toLowerCase();
+                    const clerk = getBillClerkBadgeText(bill).toLowerCase();
+                    const hasFruitMatch = (bill.items || []).some(it =>
+                        (it.subColumn || '').toLowerCase().includes(q) ||
+                        (it.fruit || '').toLowerCase().includes(q)
+                    );
+                    if (!rcpt.includes(q) && !clerk.includes(q) && !hasFruitMatch) return false;
+                }
+                return true;
+            });
+        }
+
+        function renderHistoricalBillTab() {
+            const filtered = getHistoricalFilteredBills();
+            document.getElementById('histBillTotalCountBadge').textContent = `${filtered.length} Bill${filtered.length === 1 ? '' : 's'}`;
+            document.getElementById('navBillCountBadge').textContent = syncedBills.length;
+
+            const periodSum = Math.round(filtered.reduce((sum, b) => sum + (Number(b.totalAmount) || 0), 0) * 100) / 100;
+            document.getElementById('hbMasterPeriodTotal').textContent = formatCurrency(periodSum);
+
+            const pendingReqs = getPendingDeletionRequests();
+            const listContainer = document.getElementById('hbMasterListContainer');
+
+            if (filtered.length === 0) {
+                listContainer.innerHTML = `<div class="py-10 text-center text-xs text-slate-400 font-medium">No saved bills in this period.</div>`;
+                renderSelectedHistoricalReceipt(null, 0);
+                return;
+            }
+
+            let activeIndex = filtered.findIndex(b => b.id === selectedHistoricalBillId);
+            if (activeIndex === -1) {
+                activeIndex = 0;
+                selectedHistoricalBillId = filtered[0].id;
+            }
+
+            listContainer.innerHTML = filtered.map((bill, idx) => {
+                const isSelected = bill.id === selectedHistoricalBillId;
+                const rcptNo = getBillDisplayRcptNo(bill, idx);
+                const dtStr = getBillTerminalDateTime(bill);
+                const amt = formatCurrency(bill.totalAmount);
+                const hasPendingReq = pendingReqs.some(r => r.billId === bill.id);
+
+                const rowClass = isSelected
+                    ? 'bg-lime-400 text-slate-950 font-black'
+                    : (idx % 2 === 0 ? 'bg-white hover:bg-emerald-50 text-slate-800' : 'bg-slate-50 hover:bg-emerald-50 text-slate-800');
+
+                return `
+                    <button type="button" data-hbill-id="${escapeHtml(bill.id)}" class="hb-master-row-btn w-full grid grid-cols-12 items-center px-2.5 py-2.5 text-left text-[11px] sm:text-xs transition ${rowClass}">
+                        <div class="col-span-4 mono font-extrabold truncate pr-1">
+                            ${escapeHtml(rcptNo)}
+                            ${hasPendingReq ? '<span class="inline-block w-2 h-2 rounded-full bg-rose-600 ml-0.5" title="Deletion Requested"></span>' : ''}
+                        </div>
+                        <div class="col-span-5 mono text-[10px] sm:text-[11px] truncate pr-1">${escapeHtml(dtStr)}</div>
+                        <div class="col-span-3 mono font-black text-right">${amt}</div>
+                    </button>
+                `;
+            }).join('');
+
+            listContainer.querySelectorAll('.hb-master-row-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    selectedHistoricalBillId = btn.dataset.hbillId;
+                    renderHistoricalBillTab();
+                });
+            });
+
+            renderSelectedHistoricalReceipt(filtered[activeIndex], activeIndex);
+        }
+
+        function renderSelectedHistoricalReceipt(bill, index = 0) {
+            const headerEl = document.getElementById('hbPreviewRcptHeader');
+            const badgeEl = document.getElementById('hbPreviewPayBadge');
+            const pendingBadgeEl = document.getElementById('hbPreviewPendingBadge');
+            const billDelBtn = document.getElementById('billDeleteActionBtn');
+            const itemsBody = document.getElementById('hbPreviewItemsBody');
+            const footerBlock = document.getElementById('hbPreviewFooterBlock');
+
+            if (!bill) {
+                headerEl.textContent = 'RcptNo: --';
+                badgeEl.classList.add('hidden');
+                pendingBadgeEl.classList.add('hidden');
+                billDelBtn.classList.add('hidden');
+                footerBlock.classList.add('hidden');
+                itemsBody.innerHTML = `<div class="py-12 text-center text-xs text-slate-400 font-medium">Select any bill on the left to view all fruits in that receipt.</div>`;
+                return;
+            }
+
+            const isAdmin = isCurrentDeviceAdmin();
+            const pendingReqsForBill = getPendingDeletionRequests().filter(r => r.billId === bill.id);
+
+            const rcptNo = getBillDisplayRcptNo(bill, index);
+            const shortRcpt = getBillShortRcptNo(bill, index);
+            const dtStr = getBillTerminalDateTime(bill);
+            const payMode = bill.paymentMode || 'CASH';
+
+            headerEl.textContent = `RcptNo: ${rcptNo}`;
+            badgeEl.textContent = payMode;
+            badgeEl.className = payMode === 'GPAY'
+                ? 'text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-500 text-white'
+                : 'text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-400 text-slate-950';
+            badgeEl.classList.remove('hidden');
+
+            if (pendingReqsForBill.length > 0) {
+                pendingBadgeEl.classList.remove('hidden');
+            } else {
+                pendingBadgeEl.classList.add('hidden');
+            }
+
+            billDelBtn.classList.remove('hidden');
+            if (isAdmin) {
+                billDelBtn.textContent = '🗑 Delete Bill';
+                billDelBtn.className = 'px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-extrabold transition';
+            } else {
+                billDelBtn.textContent = '⚠ Request Bill Delete';
+                billDelBtn.className = 'px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-black transition';
+            }
+            billDelBtn.onclick = () => {
+                if (isAdmin) {
+                    openConfirmDialog(
+                        `Delete Receipt ${rcptNo}?`,
+                        'As Admin, this will permanently delete this entire receipt and update the PLU report.',
+                        () => executeDeletionOfBillOrLine(bill.id, 'BILL', null, null)
+                    );
+                } else {
+                    openStaffRequestDeleteModal(bill, null);
+                }
+            };
+
+            const items = bill.items || [];
+            let calcTotalQty = 0;
+            let calcSubtotal = 0;
+
+            itemsBody.innerHTML = items.map((it, itemIdx) => {
+                const qty = Number(it.quantity) || 0;
+                const amt = Number(it.amount) || 0;
+                const price = Number(it.rate ?? it.ratePerUnit ?? (qty ? amt / qty : 0));
+                calcTotalQty += qty;
+                calcSubtotal += amt;
+
+                const lineHasPendingReq = pendingReqsForBill.some(r => r.targetType === 'ITEM' && r.itemIndex === itemIdx);
+
+                const lineActionHtml = isAdmin
+                    ? `<button type="button" data-itemidx="${itemIdx}" class="line-del-action-btn ml-1 px-1.5 py-0.5 rounded bg-rose-100 hover:bg-rose-600 text-rose-700 hover:text-white text-[10px] font-black transition no-print" title="Admin: Delete this line">✕</button>`
+                    : (lineHasPendingReq
+                        ? `<span class="ml-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[9px] font-black no-print">REQ</span>`
+                        : `<button type="button" data-itemidx="${itemIdx}" class="line-del-action-btn ml-1 px-1.5 py-0.5 rounded bg-amber-100 hover:bg-amber-400 text-amber-900 text-[9px] font-black transition no-print" title="Request Admin to delete line">Req Del</button>`);
+
+                return `
+                    <div class="grid grid-cols-12 items-center px-3 py-2 text-xs hover:bg-slate-50">
+                        <div class="col-span-5 pr-1 min-w-0">
+                            <div class="font-black text-slate-900 truncate">${escapeHtml(it.subColumn || it.fruit)}</div>
+                            <div class="text-[10px] font-bold text-slate-400 uppercase truncate">${escapeHtml(it.fruit || '')} (${escapeHtml(it.unit || 'Kg')})</div>
+                        </div>
+                        <div class="col-span-2 text-right mono font-bold text-slate-800">${qty.toFixed(2)}</div>
+                        <div class="col-span-2 text-right mono font-semibold text-slate-600">${formatCurrency(price)}</div>
+                        <div class="col-span-3 text-right mono font-black text-slate-900 flex items-center justify-end">
+                            <span>${formatCurrency(amt)}</span>
+                            ${lineActionHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            itemsBody.querySelectorAll('.line-del-action-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.dataset.itemidx, 10);
+                    const targetLine = items[idx];
+                    if (isAdmin) {
+                        openConfirmDialog(
+                            `Delete ${targetLine.subColumn}?`,
+                            `Remove ${targetLine.subColumn} (₹${formatCurrency(targetLine.amount)}) from receipt ${rcptNo}?`,
+                            () => executeDeletionOfBillOrLine(bill.id, 'ITEM', idx, targetLine.lineId || targetLine.id || null)
+                        );
+                    } else {
+                        openStaffRequestDeleteModal(bill, idx);
+                    }
+                });
+            });
+
+            const finalTotal = Number(bill.totalAmount ?? calcSubtotal);
+            const finalQty = Number(bill.totalQty ?? calcTotalQty);
+
+            document.getElementById('hbPreviewTotalQty').textContent = finalQty.toFixed(2);
+            document.getElementById('hbPreviewSubtotalAmt').textContent = formatCurrency(finalTotal);
+            document.getElementById('hbPreviewGrandTotalAmt').textContent = formatCurrency(finalTotal);
+            document.getElementById('hbPreviewPayModeRowLabel').textContent = payMode;
+            document.getElementById('hbPreviewPayModeRowAmt').textContent = formatCurrency(finalTotal);
+            document.getElementById('hbPreviewFooterDateTime').textContent = dtStr;
+            document.getElementById('hbPreviewFooterClerk').textContent = getBillClerkBadgeText(bill);
+            document.getElementById('hbPreviewFooterShortRcpt').textContent = shortRcpt;
+
+            footerBlock.classList.remove('hidden');
+        }
+
+        function setHistoricalPeriodMode(period) {
+            const startInput = document.getElementById('hbStartDate');
+            const endInput = document.getElementById('hbEndDate');
+
+            if (period === 'TODAY') {
+                const today = getTodayIsoDate();
+                startInput.value = today;
+                endInput.value = today;
+            } else if (period === 'YESTERDAY') {
+                const yest = getYesterdayIsoDate();
+                startInput.value = yest;
+                endInput.value = yest;
+            } else {
+                startInput.value = '';
+                endInput.value = '';
+            }
+
+            document.querySelectorAll('.hb-period-btn').forEach(btn => {
+                btn.className = btn.dataset.hbperiod === period
+                    ? 'hb-period-btn px-2.5 py-1.5 rounded-xl text-xs font-extrabold bg-slate-900 text-white'
+                    : 'hb-period-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200';
+            });
+
+            renderHistoricalBillTab();
+        }
+
+        // -----------------------------------------------------------------
+        // 9. TAB 3: PLU SALES REPORT & 8-DEVICE CLERK BREAKDOWN
+        // -----------------------------------------------------------------
+        function getPluFilteredBills() {
+            const startDate = document.getElementById('pluStartDate').value;
+            const endDate = document.getElementById('pluEndDate').value;
+            const payMode = document.getElementById('pluPayFilter').value;
+
+            return syncedBills.filter(bill => {
+                if (startDate && bill.date && bill.date < startDate) return false;
+                if (endDate && bill.date && bill.date > endDate) return false;
+                if (payMode !== 'ALL' && bill.paymentMode !== payMode) return false;
+                return true;
+            });
+        }
+
+        function computePluReportRows() {
+            const bills = getPluFilteredBills();
+            let cashTotal = 0;
+            let gpayTotal = 0;
+            const pluMap = new Map();
+            const fleetTotals = {};
+
+            DEVICE_SLOTS.forEach(s => {
+                fleetTotals[s.slotId] = {
+                    slotId: s.slotId,
+                    role: s.role,
+                    deviceNumber: s.deviceNumber,
+                    profileName: (activeFleetDevices[s.slotId] && activeFleetDevices[s.slotId].profileName) || s.defaultName,
+                    billsCount: 0,
+                    amount: 0
+                };
+            });
+
+            bills.forEach(bill => {
+                const billAmt = Number(bill.totalAmount) || 0;
+                if (bill.paymentMode === 'GPAY') gpayTotal += billAmt;
+                else cashTotal += billAmt;
+
+                const slotKey = bill.deviceSlotId || 'ADMIN';
+                if (!fleetTotals[slotKey]) {
+                    fleetTotals[slotKey] = {
+                        slotId: slotKey,
+                        role: bill.deviceRole || slotKey,
+                        deviceNumber: bill.deviceNumber || 1,
+                        profileName: bill.profileName || 'Owner',
+                        billsCount: 0,
+                        amount: 0
+                    };
+                }
+                fleetTotals[slotKey].billsCount += 1;
+                fleetTotals[slotKey].amount += billAmt;
+                if (bill.profileName) fleetTotals[slotKey].profileName = bill.profileName;
+
+                (bill.items || []).forEach(it => {
+                    const desc = it.subColumn || it.fruit || 'UNKNOWN';
+                    const fruit = it.fruit || '';
+                    const code = Number(it.pluCode || PLU_CODE_BY_SUBCOL[desc] || 999);
+                    const qty = Number(it.quantity) || 0;
+                    const amt = Number(it.amount) || 0;
+                    const unit = it.unit || 'Kg';
+
+                    if (!pluMap.has(desc)) {
+                        pluMap.set(desc, {
+                            code: code,
+                            description: desc,
+                            fruit: fruit,
+                            totalQty: 0,
+                            totalAmount: 0,
+                            units: {}
+                        });
+                    }
+                    const entry = pluMap.get(desc);
+                    entry.totalQty += qty;
+                    entry.totalAmount += amt;
+                    entry.units[unit] = (entry.units[unit] || 0) + qty;
+                });
+            });
+
+            const rows = Array.from(pluMap.values()).sort((a, b) => a.code - b.code);
+            return {
+                rows,
+                fleetTotals: Object.values(fleetTotals),
+                cashTotal: Math.round(cashTotal * 100) / 100,
+                gpayTotal: Math.round(gpayTotal * 100) / 100,
+                grandTotal: Math.round((cashTotal + gpayTotal) * 100) / 100
+            };
+        }
+
+        function renderPluReportTab() {
+            const { rows, fleetTotals, cashTotal, gpayTotal, grandTotal } = computePluReportRows();
+
+            document.getElementById('pluCashTotal').textContent = formatCurrency(cashTotal);
+            document.getElementById('pluGpayTotal').textContent = formatCurrency(gpayTotal);
+            document.getElementById('pluTopGrandTotal').textContent = formatCurrency(grandTotal);
+
+            const tbody = document.getElementById('pluTableBody');
+            if (rows.length === 0) {
+                tbody.innerHTML = `<div class="py-10 text-center text-xs text-slate-400 font-medium">No PLU sales recorded for this period.</div>`;
+                document.getElementById('pluDistinctItemsCount').textContent = '0';
+                document.getElementById('pluFooterTotalQty').textContent = '0.00';
+                document.getElementById('pluFooterTotalAmount').textContent = '0';
+            } else {
+                let sumAllQty = 0;
+                let sumAllAmt = 0;
+
+                tbody.innerHTML = rows.map((row, idx) => {
+                    sumAllQty += row.totalQty;
+                    sumAllAmt += row.totalAmount;
+                    const bg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/70';
+                    const unitBreakdown = Object.entries(row.units)
+                        .map(([u, q]) => `${Number(q).toFixed(2)} ${u}`)
+                        .join(', ');
+
+                    return `
+                        <div class="grid grid-cols-12 items-center px-3 py-2 text-xs ${bg} hover:bg-emerald-50/60">
+                            <div class="col-span-2 mono font-extrabold text-slate-600">${row.code}</div>
+                            <div class="col-span-5 pr-1 min-w-0">
+                                <div class="font-black text-slate-900 truncate">${escapeHtml(row.description)}</div>
+                                <div class="text-[10px] font-bold text-slate-400 uppercase truncate">${escapeHtml(row.fruit)} • ${escapeHtml(unitBreakdown)}</div>
+                            </div>
+                            <div class="col-span-2 text-right mono font-extrabold text-slate-800">${row.totalQty.toFixed(2)}</div>
+                            <div class="col-span-3 text-right mono font-black text-slate-900">${formatCurrency(row.totalAmount)}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                document.getElementById('pluDistinctItemsCount').textContent = rows.length;
+                document.getElementById('pluFooterTotalQty').textContent = sumAllQty.toFixed(2);
+                document.getElementById('pluFooterTotalAmount').textContent = formatCurrency(sumAllAmt);
+            }
+
+            const fleetGrid = document.getElementById('deviceFleetSalesGrid');
+            fleetGrid.innerHTML = fleetTotals.map(dev => {
+                const isAdminSlot = dev.slotId === 'ADMIN';
+                const cardBg = isAdminSlot ? 'bg-amber-50/70 border-amber-200' : 'bg-slate-50 border-slate-200';
+                return `
+                    <div class="rounded-xl border ${cardBg} p-2.5">
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="text-[10px] font-black uppercase ${isAdminSlot ? 'text-amber-800' : 'text-indigo-700'}">${escapeHtml(dev.role)}</span>
+                            <span class="mono text-[10px] font-bold text-slate-400">${dev.billsCount} bills</span>
+                        </div>
+                        <div class="text-xs font-extrabold text-slate-800 truncate mt-0.5">${escapeHtml(dev.profileName)}</div>
+                        <div class="mono text-sm font-black text-slate-900 mt-1">₹${formatCurrency(dev.amount)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function setPluPeriodMode(period) {
+            const startInput = document.getElementById('pluStartDate');
+            const endInput = document.getElementById('pluEndDate');
+            const subtitle = document.getElementById('pluPeriodSubtitle');
+
+            if (period === 'TODAY') {
+                const today = getTodayIsoDate();
+                startInput.value = today;
+                endInput.value = today;
+                subtitle.textContent = `Period: ${today} 00:00 - 23:59`;
+            } else if (period === 'YESTERDAY') {
+                const yest = getYesterdayIsoDate();
+                startInput.value = yest;
+                endInput.value = yest;
+                subtitle.textContent = `Period: ${yest} 00:00 - 23:59`;
+            } else {
+                startInput.value = '';
+                endInput.value = '';
+                subtitle.textContent = 'Period: All Recorded Sales';
+            }
+
+            document.querySelectorAll('.plu-period-btn').forEach(btn => {
+                btn.className = btn.dataset.pluperiod === period
+                    ? 'plu-period-btn px-2.5 py-1.5 rounded-xl text-xs font-extrabold bg-slate-900 text-white'
+                    : 'plu-period-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200';
+            });
+
+            renderPluReportTab();
+        }
+
+        // -----------------------------------------------------------------
+        // 10. TAB 4: PER-FRUIT HISTORY & JSON DATABASE
+        // -----------------------------------------------------------------
+        function renderFruitHistoryTab() {
+            const fruitSelect = document.getElementById('histFruitFilter');
+            const subColSelect = document.getElementById('histSubColFilter');
+            const clerkSelect = document.getElementById('histClerkFilter');
+            const dateFilter = document.getElementById('histDateFilter').value;
+
+            const prevFruit = fruitSelect.value || 'ALL';
+            const prevSubCol = subColSelect.value || 'ALL';
+            const prevClerk = clerkSelect.value || 'ALL';
+
+            fruitSelect.innerHTML = `<option value="ALL">All Fruits (${fruitCatalog.length})</option>` +
+                fruitCatalog.map(c => `<option value="${escapeHtml(c.fruit)}">${escapeHtml(c.fruit)}</option>`).join('');
+            fruitSelect.value = prevFruit;
+
+            const availableSubs = [];
+            fruitCatalog.forEach(c => {
+                if (fruitSelect.value === 'ALL' || fruitSelect.value === c.fruit) {
+                    c.subColumns.forEach(s => availableSubs.push(s));
+                }
+            });
+            subColSelect.innerHTML = `<option value="ALL">All Sub-Columns</option>` +
+                availableSubs.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+            if (availableSubs.includes(prevSubCol)) subColSelect.value = prevSubCol;
+
+            clerkSelect.innerHTML = `<option value="ALL">All 8 Devices</option>` +
+                DEVICE_SLOTS.map(s => `<option value="${escapeHtml(s.slotId)}">${escapeHtml(s.role)} (Dev ${s.deviceNumber})</option>`).join('');
+            if (DEVICE_SLOTS.some(s => s.slotId === prevClerk)) clerkSelect.value = prevClerk;
+
+            const selFruit = fruitSelect.value;
+            const selSub = subColSelect.value;
+            const selSlot = clerkSelect.value;
+
+            const matchingEntries = [];
+            const summaryMap = new Map();
+
+            syncedBills.forEach((bill, bIdx) => {
+                if (dateFilter && bill.date !== dateFilter) return;
+                if (selSlot !== 'ALL' && (bill.deviceSlotId || 'ADMIN') !== selSlot) return;
+
+                const rcptNo = getBillDisplayRcptNo(bill, bIdx);
+                const dtStr = getBillTerminalDateTime(bill);
+
+                (bill.items || []).forEach(it => {
+                    if (selFruit !== 'ALL' && it.fruit !== selFruit) return;
+                    if (selSub !== 'ALL' && it.subColumn !== selSub) return;
+
+                    matchingEntries.push({
+                        rcptNo,
+                        dtStr,
+                        clerkBadge: getBillClerkBadgeText(bill),
+                        fruit: it.fruit,
+                        subColumn: it.subColumn,
+                        quantity: Number(it.quantity) || 0,
+                        unit: it.unit || 'Kg',
+                        rate: Number(it.rate) || 0,
+                        amount: Number(it.amount) || 0
+                    });
+
+                    const key = `${it.fruit}::${it.subColumn}`;
+                    if (!summaryMap.has(key)) {
+                        summaryMap.set(key, {
+                            fruit: it.fruit,
+                            subColumn: it.subColumn,
+                            totalAmount: 0,
+                            units: {},
+                            lastRate: Number(it.rate) || 0
+                        });
+                    }
+                    const agg = summaryMap.get(key);
+                    agg.totalAmount += Number(it.amount) || 0;
+                    agg.units[it.unit || 'Kg'] = (agg.units[it.unit || 'Kg'] || 0) + (Number(it.quantity) || 0);
+                });
+            });
+
+            const summaryGrid = document.getElementById('fruitSummaryCardsGrid');
+            if (summaryMap.size === 0) {
+                summaryGrid.innerHTML = `<div class="col-span-full py-4 text-center text-xs text-slate-400 font-medium">No matching fruit sales found.</div>`;
+            } else {
+                summaryGrid.innerHTML = Array.from(summaryMap.values()).map(agg => {
+                    const unitBadges = Object.entries(agg.units)
+                        .map(([u, q]) => `<span class="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 mono text-[11px] font-black">${Number(q).toFixed(2)} ${escapeHtml(u)}</span>`)
+                        .join(' ');
+                    return `
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-2.5 flex items-center justify-between gap-2">
+                            <div class="min-w-0">
+                                <div class="text-xs font-black text-slate-900 truncate">${escapeHtml(agg.subColumn)}</div>
+                                <div class="text-[10px] font-bold text-slate-400 uppercase">${escapeHtml(agg.fruit)} • Last ₹${formatCurrency(agg.lastRate)}</div>
+                                <div class="flex flex-wrap gap-1 mt-1">${unitBadges}</div>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <div class="text-[10px] font-bold uppercase text-slate-400">Revenue</div>
+                                <div class="mono text-sm font-black text-slate-900">₹${formatCurrency(agg.totalAmount)}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            document.getElementById('histItemLogCount').textContent = `${matchingEntries.length} Entries`;
+            const chronoList = document.getElementById('fruitChronologicalList');
+            if (matchingEntries.length === 0) {
+                chronoList.innerHTML = `<div class="py-8 text-center text-xs text-slate-400 font-medium">No individual item entries to display.</div>`;
+            } else {
+                chronoList.innerHTML = matchingEntries.map(e => `
+                    <div class="px-3 py-2.5 flex items-center justify-between gap-2 text-xs hover:bg-slate-50">
+                        <div class="min-w-0">
+                            <div class="font-black text-slate-900 truncate">${escapeHtml(e.subColumn)} <span class="text-[10px] font-bold text-slate-400">(${escapeHtml(e.fruit)})</span></div>
+                            <div class="text-[10px] font-semibold text-slate-500 mono mt-0.5">
+                                ${escapeHtml(e.rcptNo)} • ${escapeHtml(e.dtStr)} • <span class="text-indigo-600 font-extrabold">${escapeHtml(e.clerkBadge)}</span>
+                            </div>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <div class="mono font-black text-slate-900">₹${formatCurrency(e.amount)}</div>
+                            <div class="mono text-[10px] font-bold text-slate-500">${e.quantity} ${escapeHtml(e.unit)} × ₹${formatCurrency(e.rate)}</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            document.getElementById('jsonPayloadViewer').textContent = JSON.stringify(syncedBills, null, 2);
+        }
+
+        function refreshAllViews() {
+            updateDeletionRequestsBadges();
+            update8PhoneSetupButtonsVisibility();
+            renderActiveReceipt();
+            renderHistoricalBillTab();
+            renderPluReportTab();
+            renderFruitHistoryTab();
+        }
+
+        // -----------------------------------------------------------------
+        // 11. EVENT BINDINGS & CLOUD CONFIG PARSER
+        // -----------------------------------------------------------------
+        function switchTab(tabName) {
+            ['pos', 'historical', 'plu', 'history'].forEach(t => {
+                const sec = document.getElementById(`tab-${t}`);
+                if (t === tabName) sec.classList.remove('hidden');
+                else sec.classList.add('hidden');
+            });
+
+            document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+                btn.className = btn.dataset.tab === tabName
+                    ? 'nav-tab-btn py-2 px-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold transition flex items-center justify-center gap-1 bg-emerald-600 text-white shadow-sm'
+                    : 'nav-tab-btn py-2 px-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold transition flex items-center justify-center gap-1 bg-slate-800 text-slate-300 hover:bg-slate-700';
+            });
+
+            const bottomBar = document.getElementById('posBottomActionBar');
+            if (tabName === 'pos') bottomBar.classList.remove('hidden');
+            else bottomBar.classList.add('hidden');
+
+            refreshAllViews();
+        }
+
+        function parseFirebaseConfigInput(rawText) {
+            const text = String(rawText || '').trim();
+            if (!text) return null;
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                const match = text.match(/\{[\s\S]*\}/);
+                if (!match) return null;
+                const objLiteral = match[0]
+                    .replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
+                    .replace(/'/g, '"')
+                    .replace(/,\s*}/g, '}');
+                return JSON.parse(objLiteral);
+            }
+        }
+
+        function bindEvents() {
+            document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+            });
+
+            // Install App Modal & Native Prompt
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredInstallPrompt = e;
+                document.getElementById('nativeInstallPromptBox').classList.remove('hidden');
+            });
+
+            const openInstallModal = () => {
+                if (deferredInstallPrompt) {
+                    document.getElementById('nativeInstallPromptBox').classList.remove('hidden');
+                }
+                document.getElementById('installAppModal').classList.remove('hidden');
+            };
+            document.getElementById('installAppBtn').addEventListener('click', openInstallModal);
+            document.getElementById('openInstallGuideModalBtn').addEventListener('click', openInstallModal);
+            document.getElementById('closeInstallModalBtn').addEventListener('click', () => {
+                document.getElementById('installAppModal').classList.add('hidden');
+            });
+            document.getElementById('triggerNativeInstallBtn').addEventListener('click', async () => {
+                if (!deferredInstallPrompt) return;
+                deferredInstallPrompt.prompt();
+                await deferredInstallPrompt.userChoice;
+                deferredInstallPrompt = null;
+                document.getElementById('nativeInstallPromptBox').classList.add('hidden');
+                document.getElementById('installAppModal').classList.add('hidden');
+            });
+
+            // Cloud Sync Setup Modal & 1-Tap 8-Phone Setup Link
+            const openCloudSetupModal = () => {
+                document.getElementById('firebaseConfigTextarea').value = localStorage.getItem(LOCAL_FIREBASE_CFG_KEY) || '';
+                update8PhoneSetupButtonsVisibility();
+                document.getElementById('cloudConfigModal').classList.remove('hidden');
+            };
+            document.getElementById('syncStatusBadge').addEventListener('click', openCloudSetupModal);
+            document.getElementById('openCloudConfigModalBtn').addEventListener('click', openCloudSetupModal);
+            document.getElementById('closeCloudConfigModalBtn').addEventListener('click', () => {
+                document.getElementById('cloudConfigModal').classList.add('hidden');
+            });
+            document.getElementById('saveCloudConfigBtn').addEventListener('click', () => {
+                const raw = document.getElementById('firebaseConfigTextarea').value;
+                const parsed = parseFirebaseConfigInput(raw);
+                if (!parsed || !parsed.apiKey || !parsed.projectId) {
+                    showToast('Invalid Firebase config (missing apiKey or projectId)', 'error');
+                    return;
+                }
+                localStorage.setItem(LOCAL_FIREBASE_CFG_KEY, JSON.stringify(parsed, null, 2));
+                update8PhoneSetupButtonsVisibility();
+                showToast('Cloud Config Saved! Connecting 8-device sync...');
+                connectToFirebaseConfig(parsed);
+            });
+            document.getElementById('clearSavedCloudConfigBtn').addEventListener('click', () => {
+                localStorage.removeItem(LOCAL_FIREBASE_CFG_KEY);
+                document.getElementById('firebaseConfigTextarea').value = '';
+                update8PhoneSetupButtonsVisibility();
+                showToast('Saved Cloud Config cleared', 'info');
+            });
+
+            const copy8PhoneLinkHandler = () => {
+                const setupUrl = build8PhoneSetupUrl();
+                if (!setupUrl) {
+                    showToast('Save Firebase config first', 'error');
+                    return;
+                }
+                copyTextFallback(setupUrl, 'Copied 8-Phone Setup Link! Send on WhatsApp to Staff 1-7.');
+            };
+            document.getElementById('copy8PhoneSetupLinkBtn').addEventListener('click', copy8PhoneLinkHandler);
+            document.getElementById('modalCopy8PhoneLinkBtn').addEventListener('click', copy8PhoneLinkHandler);
+
+            // 8-Device Role Modal
+            const openRoleModal = () => {
+                pendingModalSlotId = deviceConfig.slotId;
+                document.getElementById('profileNameInput').value = deviceConfig.profileName;
+                renderDeviceSlotsModal();
+                document.getElementById('profileModal').classList.remove('hidden');
+            };
+            document.getElementById('openProfileModalBtn').addEventListener('click', openRoleModal);
+            document.getElementById('switchToAdminPromptBtn').addEventListener('click', openRoleModal);
+            document.getElementById('closeProfileModalBtn').addEventListener('click', () => {
+                document.getElementById('profileModal').classList.add('hidden');
+            });
+            document.getElementById('saveProfileBtn').addEventListener('click', () => {
+                const slotObj = DEVICE_SLOTS.find(s => s.slotId === pendingModalSlotId) || DEVICE_SLOTS[0];
+                const customName = (document.getElementById('profileNameInput').value || '').trim() || slotObj.defaultName;
+                saveDeviceConfig({
+                    slotId: slotObj.slotId,
+                    deviceNumber: slotObj.deviceNumber,
+                    role: slotObj.role,
+                    profileName: customName
+                });
+                document.getElementById('profileModal').classList.add('hidden');
+                refreshAllViews();
+                showToast(`Active Device: ${slotObj.role} (${customName})`);
+            });
+
+            // Staff Deletion Request Modal
+            document.getElementById('closeReqDelModalBtn').addEventListener('click', () => {
+                pendingDeleteRequestDraft = null;
+                document.getElementById('requestDeleteModal').classList.add('hidden');
+            });
+            document.querySelectorAll('.quick-reason-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.getElementById('reqDelReasonInput').value = btn.dataset.delreason;
+                });
+            });
+            document.getElementById('submitDeleteRequestBtn').addEventListener('click', submitStaffDeletionRequest);
+
+            // Admin Deletion Requests Queue Modal
+            const openAdminQueue = () => {
+                if (!isCurrentDeviceAdmin()) return;
+                renderAdminRequestsQueueModal();
+                document.getElementById('adminRequestsQueueModal').classList.remove('hidden');
+            };
+            document.getElementById('adminDelReqAlertBtn').addEventListener('click', openAdminQueue);
+            document.getElementById('hbReviewRequestsBtn').addEventListener('click', openAdminQueue);
+            document.getElementById('openDelRequestsQueueBtn').addEventListener('click', openAdminQueue);
+            document.getElementById('closeAdminQueueModalBtn').addEventListener('click', () => {
+                document.getElementById('adminRequestsQueueModal').classList.add('hidden');
+            });
+
+            // Admin Add Fruit Modal
+            const openAddFruitModal = () => {
+                if (!isCurrentDeviceAdmin()) {
+                    showToast('Only Admin can add fruits or sub-columns', 'error');
+                    return;
+                }
+                document.getElementById('customFruitNameInput').value = selectedFruitObj ? selectedFruitObj.fruit : '';
+                document.getElementById('customSubColNameInput').value = '';
+                document.getElementById('addFruitModal').classList.remove('hidden');
+            };
+            document.getElementById('openAddFruitModalBtn').addEventListener('click', openAddFruitModal);
+            document.getElementById('openAddSubColQuickBtn').addEventListener('click', openAddFruitModal);
+            document.getElementById('adminAddFruitShortcutBtn').addEventListener('click', openAddFruitModal);
+            document.getElementById('closeAddFruitModalBtn').addEventListener('click', () => {
+                document.getElementById('addFruitModal').classList.add('hidden');
+            });
+            document.getElementById('saveCustomFruitBtn').addEventListener('click', () => {
+                if (!isCurrentDeviceAdmin()) return;
+                const fName = (document.getElementById('customFruitNameInput').value || '').trim().toUpperCase();
+                const sName = (document.getElementById('customSubColNameInput').value || '').trim();
+                if (!fName || !sName) {
+                    showToast('Enter both Fruit and Sub-Column name', 'error');
+                    return;
+                }
+                let existing = fruitCatalog.find(c => c.fruit.toUpperCase() === fName);
+                if (existing) {
+                    if (!existing.subColumns.includes(sName)) existing.subColumns.push(sName);
+                } else {
+                    existing = { fruit: fName, color: 'bg-slate-800 text-white', subColumns: [sName] };
+                    fruitCatalog.push(existing);
+                }
+                persistFruitCatalog();
+                document.getElementById('addFruitModal').classList.add('hidden');
+                selectFruitCategory(existing);
+                selectSubColumnItem(sName);
+                showToast(`Added ${sName} under ${fName}`);
+            });
+
+            // Admin Clear All Sales Data
+            document.getElementById('adminClearAllBillsBtn').addEventListener('click', () => {
+                openConfirmDialog(
+                    'Clear All Sales Records?',
+                    'This will permanently delete all saved receipts and PLU history across all 8 synced devices.',
+                    clearAllSalesDataAdmin
+                );
+            });
+
+            // Confirmation Dialog
+            document.getElementById('confirmModalCancelBtn').addEventListener('click', () => {
+                confirmCallback = null;
+                document.getElementById('confirmActionModal').classList.add('hidden');
+            });
+            document.getElementById('confirmModalProceedBtn').addEventListener('click', () => {
+                document.getElementById('confirmActionModal').classList.add('hidden');
+                if (typeof confirmCallback === 'function') confirmCallback();
+                confirmCallback = null;
+            });
+
+            // Receipt Controls
+            document.getElementById('toggleGstBtn').addEventListener('click', () => {
+                gstPercent = gstPercent === 0 ? 5 : 0;
+                document.getElementById('gstRateLabel').textContent = `${gstPercent}%`;
+                renderActiveReceipt();
+            });
+            document.getElementById('toggleRefundBtn').addEventListener('click', () => {
+                isRefundMode = !isRefundMode;
+                const banner = document.getElementById('refundModeBadge');
+                if (isRefundMode) banner.classList.remove('hidden');
+                else banner.classList.add('hidden');
+                updateLiveLineCalculation();
+            });
+            document.getElementById('clearCartBtn').addEventListener('click', () => {
+                activeCart = [];
+                isRefundMode = false;
+                document.getElementById('refundModeBadge').classList.add('hidden');
+                renderActiveReceipt();
+                resetActiveBuilder();
+                showToast('Active bill cleared', 'info');
+            });
+
+            // Native Keyboard Inputs & Builder
+            document.getElementById('resetBuilderBtn').addEventListener('click', resetActiveBuilder);
+            document.getElementById('fruitSearchInput').addEventListener('input', renderFruitCategories);
+            document.querySelectorAll('.unit-pill-btn').forEach(btn => {
+                btn.addEventListener('click', () => setSelectedUnit(btn.dataset.unit));
+            });
+
+            const qtyInput = document.getElementById('qtyInput');
+            const rateInput = document.getElementById('rateInput');
+            qtyInput.addEventListener('input', updateLiveLineCalculation);
+            rateInput.addEventListener('input', updateLiveLineCalculation);
+            qtyInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    rateInput.focus();
+                }
+            });
+            rateInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    appendLineToActiveReceipt();
+                }
+            });
+            document.querySelectorAll('.quick-qty-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    qtyInput.value = btn.dataset.quickqty;
+                    updateLiveLineCalculation();
+                    rateInput.focus();
+                });
+            });
+            document.getElementById('addLineToBillBtn').addEventListener('click', appendLineToActiveReceipt);
+
+            // Instant Checkout
+            document.getElementById('saveCashBtn').addEventListener('click', () => finalizeAndSaveBill('CASH'));
+            document.getElementById('saveGpayBtn').addEventListener('click', () => finalizeAndSaveBill('GPAY'));
+
+            // Historical Bill Controls
+            document.querySelectorAll('.hb-period-btn').forEach(btn => {
+                btn.addEventListener('click', () => setHistoricalPeriodMode(btn.dataset.hbperiod));
+            });
+            document.getElementById('hbStartDate').addEventListener('change', () => {
+                document.querySelectorAll('.hb-period-btn').forEach(b => b.className = 'hb-period-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700');
+                renderHistoricalBillTab();
+            });
+            document.getElementById('hbEndDate').addEventListener('change', () => {
+                document.querySelectorAll('.hb-period-btn').forEach(b => b.className = 'hb-period-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700');
+                renderHistoricalBillTab();
+            });
+            document.getElementById('hbPayFilter').addEventListener('change', renderHistoricalBillTab);
+            document.getElementById('hbSearchInput').addEventListener('input', renderHistoricalBillTab);
+
+            document.getElementById('copySelectedReceiptBtn').addEventListener('click', () => {
+                const bill = syncedBills.find(b => b.id === selectedHistoricalBillId);
+                if (!bill) return;
+                const rcptNo = getBillDisplayRcptNo(bill, 0);
+                const dtStr = getBillTerminalDateTime(bill);
+                const lines = [
+                    `ALPNA FRUIT POS RECEIPT (${rcptNo})`,
+                    `Date: ${dtStr} | Clerk: ${getBillClerkBadgeText(bill)}`,
+                    `----------------------------------------`
+                ];
+                (bill.items || []).forEach(it => {
+                    const qty = Number(it.quantity) || 0;
+                    const amt = Number(it.amount) || 0;
+                    const price = Number(it.rate ?? it.ratePerUnit ?? (qty ? amt / qty : 0));
+                    lines.push(`${it.subColumn} (${qty.toFixed(2)} ${it.unit} x ₹${formatCurrency(price)}) = ₹${formatCurrency(amt)}`);
+                });
+                lines.push(`----------------------------------------`);
+                lines.push(`TOTAL: ₹${formatCurrency(bill.totalAmount)} (${bill.paymentMode})`);
+
+                copyTextFallback(lines.join('\n'), `Copied receipt ${rcptNo}`);
+            });
+
+            document.getElementById('printSelectedReceiptBtn').addEventListener('click', () => window.print());
+
+            document.getElementById('exportHistBillsCsvBtn').addEventListener('click', () => {
+                const bills = getHistoricalFilteredBills();
+                const rows = [['RcptNo', 'Date', 'DeviceRole', 'ProfileName', 'PaymentMode', 'TotalQty', 'TotalAmountINR', 'ItemsSummary'].join(',')];
+                bills.forEach((b, idx) => {
+                    const rcpt = getBillDisplayRcptNo(b, idx);
+                    const dt = getBillTerminalDateTime(b);
+                    const qty = Number(b.totalQty ?? (b.items || []).reduce((s, i) => s + (Number(i.quantity) || 0), 0)).toFixed(2);
+                    const summary = (b.items || []).map(i => `${i.subColumn} (${i.quantity}${i.unit} @ ${i.rate} = ${i.amount})`).join(' | ');
+                    rows.push([
+                        `"${rcpt}"`, `"${dt}"`, `"${(b.deviceRole || 'Admin').replace(/"/g, '""')}"`,
+                        `"${(b.profileName || 'Owner').replace(/"/g, '""')}"`, `"${b.paymentMode || 'CASH'}"`,
+                        qty, Number(b.totalAmount || 0).toFixed(2), `"${summary.replace(/"/g, '""')}"`
+                    ].join(','));
+                });
+                downloadTextFile(rows.join('\n'), `Historical_Bills_${getTodayIsoDate()}.csv`, 'text/csv;charset=utf-8;');
+                showToast('Exported Historical Bills CSV');
+            });
+
+            // PLU Report Controls
+            document.querySelectorAll('.plu-period-btn').forEach(btn => {
+                btn.addEventListener('click', () => setPluPeriodMode(btn.dataset.pluperiod));
+            });
+            document.getElementById('pluStartDate').addEventListener('change', () => {
+                document.querySelectorAll('.plu-period-btn').forEach(b => b.className = 'plu-period-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700');
+                renderPluReportTab();
+            });
+            document.getElementById('pluEndDate').addEventListener('change', () => {
+                document.querySelectorAll('.plu-period-btn').forEach(b => b.className = 'plu-period-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700');
+                renderPluReportTab();
+            });
+            document.getElementById('pluPayFilter').addEventListener('change', renderPluReportTab);
+            document.getElementById('printPluReportBtn').addEventListener('click', () => window.print());
+
+            document.getElementById('exportPluCsvBtn').addEventListener('click', () => {
+                const { rows, grandTotal } = computePluReportRows();
+                const csvLines = [['Code', 'Description', 'Fruit', 'QtySold', 'AmountINR'].join(',')];
+                let sumQty = 0;
+                rows.forEach(r => {
+                    sumQty += r.totalQty;
+                    csvLines.push([r.code, `"${r.description.replace(/"/g, '""')}"`, `"${r.fruit.replace(/"/g, '""')}"`, r.totalQty.toFixed(2), r.totalAmount.toFixed(2)].join(','));
+                });
+                csvLines.push(['TOTAL', '""', '""', sumQty.toFixed(2), grandTotal.toFixed(2)].join(','));
+                downloadTextFile(csvLines.join('\n'), `PLU_Sales_Report_${getTodayIsoDate()}.csv`, 'text/csv;charset=utf-8;');
+                showToast('Exported PLU Sales Report CSV');
+            });
+
+            // Fruit History Filters & JSON Downloads
+            document.getElementById('histFruitFilter').addEventListener('change', renderFruitHistoryTab);
+            document.getElementById('histSubColFilter').addEventListener('change', renderFruitHistoryTab);
+            document.getElementById('histClerkFilter').addEventListener('change', renderFruitHistoryTab);
+            document.getElementById('histDateFilter').addEventListener('change', renderFruitHistoryTab);
+            document.getElementById('resetHistoryFiltersBtn').addEventListener('click', () => {
+                document.getElementById('histFruitFilter').value = 'ALL';
+                document.getElementById('histSubColFilter').value = 'ALL';
+                document.getElementById('histClerkFilter').value = 'ALL';
+                document.getElementById('histDateFilter').value = '';
+                renderFruitHistoryTab();
+            });
+
+            document.getElementById('copyJsonBtn').addEventListener('click', () => {
+                copyTextFallback(JSON.stringify(syncedBills, null, 2), 'Copied JSON database');
+            });
+
+            document.getElementById('downloadJsonBtn').addEventListener('click', () => {
+                downloadTextFile(JSON.stringify(syncedBills, null, 2), `Alpna_Fruit_POS_8Devices_${getTodayIsoDate()}.json`, 'application/json');
+                showToast('Downloaded JSON file');
+            });
+
+            document.getElementById('downloadFullCsvBtn').addEventListener('click', () => {
+                const csvRows = [['RcptNo', 'Date', 'Time', 'DeviceRole', 'ProfileName', 'PaymentMode', 'PLUCode', 'Fruit', 'SubColumn', 'Quantity', 'Unit', 'RatePerUnit', 'LineAmount'].join(',')];
+                syncedBills.forEach((b, idx) => {
+                    const rcpt = getBillDisplayRcptNo(b, idx);
+                    (b.items || []).forEach(it => {
+                        csvRows.push([
+                            `"${rcpt}"`, `"${b.date || ''}"`, `"${b.time || ''}"`,
+                            `"${(b.deviceRole || 'Admin').replace(/"/g, '""')}"`, `"${(b.profileName || 'Owner').replace(/"/g, '""')}"`,
+                            `"${b.paymentMode || 'CASH'}"`, it.pluCode || '',
+                            `"${(it.fruit || '').replace(/"/g, '""')}"`, `"${(it.subColumn || '').replace(/"/g, '""')}"`,
+                            Number(it.quantity || 0).toFixed(2), `"${it.unit || 'Kg'}"`,
+                            Number(it.rate || 0).toFixed(2), Number(it.amount || 0).toFixed(2)
+                        ].join(','));
+                    });
+                });
+                downloadTextFile(csvRows.join('\n'), `Alpna_Fruit_POS_All_Entries_${getTodayIsoDate()}.csv`, 'text/csv;charset=utf-8;');
+                showToast('Downloaded Full CSV');
+            });
+
+            if (syncChannel) {
+                syncChannel.onmessage = () => {
+                    if (!isCloudConnected) {
+                        syncedBills = loadLocalBills();
+                        deletionRequests = loadLocalDeletionRequests();
+                        refreshAllViews();
+                    }
+                };
+            }
+            window.addEventListener('storage', (e) => {
+                if ((e.key === LOCAL_BILLS_KEY || e.key === LOCAL_DEL_REQS_KEY) && !isCloudConnected) {
+                    syncedBills = loadLocalBills();
+                    deletionRequests = loadLocalDeletionRequests();
+                    refreshAllViews();
+                }
+            });
+        }
+
+        function downloadTextFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // -----------------------------------------------------------------
+        // 12. FIREBASE CLOUD CONNECTION & INITIALIZATION
+        // -----------------------------------------------------------------
+        async function connectToFirebaseConfig(firebaseConfig) {
+            try {
+                const app = initializeApp(firebaseConfig, `alpna-fruit-pos-${Date.now()}`);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (!user) return;
+                    currentUser = user;
+                    isCloudConnected = true;
+
+                    const badge = document.getElementById('syncStatusBadge');
+                    badge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shrink-0';
+                    badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Live Synced`;
+
+                    announceDeviceHeartbeat();
+                    setInterval(announceDeviceHeartbeat, 60000);
+
+                    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'fruit_devices'), (snap) => {
+                        snap.forEach(d => {
+                            activeFleetDevices[d.id] = d.data();
+                        });
+                        updateFleetCounterDisplay();
+                        renderPluReportTab();
+                    }, () => {});
+
+                    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'fruit_bills'), (snapshot) => {
+                        const cloudList = [];
+                        snapshot.forEach(docSnap => {
+                            cloudList.push({ id: docSnap.id, ...docSnap.data() });
+                        });
+                        cloudList.sort((a, b) => (b.createdAtMs || 0) - (a.createdAtMs || 0));
+
+                        syncedBills = cloudList;
+                        persistLocalBills(cloudList);
+                        if (!selectedHistoricalBillId && syncedBills.length > 0) {
+                            selectedHistoricalBillId = syncedBills[0].id;
+                        }
+                        refreshAllViews();
+                    }, () => {});
+
+                    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'fruit_del_requests'), (snapshot) => {
+                        const reqList = [];
+                        snapshot.forEach(docSnap => {
+                            reqList.push({ id: docSnap.id, ...docSnap.data() });
+                        });
+                        reqList.sort((a, b) => (b.createdAtMs || 0) - (a.createdAtMs || 0));
+
+                        deletionRequests = reqList;
+                        persistLocalDeletionRequests(reqList);
+                        updateDeletionRequestsBadges();
+                        renderHistoricalBillTab();
+                    }, () => {});
+                });
+            } catch (err) {
+                console.warn('Cloud sync fallback:', err);
+            }
+        }
+
+        async function initApp() {
+            const hashConfig = extractConfigFromUrlHash();
+            applyDeviceRoleUI();
+            updateClock();
+            setInterval(updateClock, 15000);
+            bindEvents();
+
+            setHistoricalPeriodMode('TODAY');
+            setPluPeriodMode('TODAY');
+            renderFruitCategories();
+            renderActiveReceipt();
+
+            syncedBills = loadLocalBills();
+            deletionRequests = loadLocalDeletionRequests();
+            if (syncedBills.length > 0) {
+                selectedHistoricalBillId = syncedBills[0].id;
+            }
+            refreshAllViews();
+
+            if (hashConfig) {
+                showToast('8-Phone Cloud Config imported automatically!');
+                await connectToFirebaseConfig(hashConfig);
+                return;
+            }
+
+            const savedUserCfgRaw = localStorage.getItem(LOCAL_FIREBASE_CFG_KEY);
+            if (savedUserCfgRaw) {
+                const parsedUserCfg = parseFirebaseConfigInput(savedUserCfgRaw);
+                if (parsedUserCfg && parsedUserCfg.apiKey) {
+                    await connectToFirebaseConfig(parsedUserCfg);
+                    return;
+                }
+            }
+
+            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                try {
+                    const envCfg = JSON.parse(__firebase_config);
+                    await connectToFirebaseConfig(envCfg);
+                } catch (e) {}
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
