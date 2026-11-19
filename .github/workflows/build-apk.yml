@@ -19,7 +19,7 @@ jobs:
       - name: Prepare Web Dir & Build Android Project
         run: |
           mkdir -p www
-          cp Alpna_Fruit_POS___8-Device_Mobile_Billing_App.html www/index.html
+          cp index.html www/index.html
           sed -i 's/"webDir": "."/"webDir": "www"/g' capacitor.config.json
           npm install
           npx cap add android
