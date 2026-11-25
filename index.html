@@ -5965,5 +5965,97 @@
         }
     })();
     </script>
+<script>
+(function () {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:fixed;bottom:78px;right:16px;z-index:99999;display:flex;flex-direction:column;align-items:flex-end;gap:6px;font-family:sans-serif;';
+  wrap.innerHTML = `
+    <div id="afVoiceMsg" style="display:none;background:#111827;color:#fff;padding:8px 12px;border-radius:10px;font-size:12px;max-width:280px;box-shadow:0 4px 12px rgba(0,0,0,.3);"></div>
+    <button id="afVoiceBtn" type="button" style="background:#dc2626;color:#fff;border:none;padding:12px 16px;border-radius:999px;font-weight:700;font-size:14px;box-shadow:0 4px 14px rgba(220,38,38,.4);cursor:pointer;">
+      🎙️ Voice Add
+    </button>
+  `;
+  document.body.appendChild(wrap);
+
+  const btn = document.getElementById('afVoiceBtn');
+  const msg = document.getElementById('afVoiceMsg');
+  const notify = (t, ms = 4500) => {
+    msg.textContent = t;
+    msg.style.display = 'block';
+    clearTimeout(msg._t);
+    msg._t = setTimeout(() => (msg.style.display = 'none'), ms);
+  };
+
+  const numWords = { ek:1, one:1, do:2, be:2, two:2, teen:3, tran:3, three:3, char:4, four:4, paanch:5, panch:5, five:5, aadha:0.5, half:0.5 };
+  function parseVoice(rawText) {
+    let s = rawText.toLowerCase();
+    for (const [k, v] of Object.entries(numWords)) s = s.replace(new RegExp(`\\b${k}\\b`, 'g'), String(v));
+    return s.split(/\b(?:and|aur|ane|plus)\b|,/g).map(part => {
+      let p = part.trim();
+      if (!p) return null;
+      let qty = 1;
+      const qm = p.match(/(\d+(?:\.\d+)?)\s*(kg|kilo|gm|gram|grams|g|dozen|dz|pc|pcs|piece|box|crate)?\b/);
+      if (qm) {
+        qty = parseFloat(qm[1]);
+        if (['gm', 'gram', 'grams', 'g'].includes(qm[2])) qty = Number((qty / 1000).toFixed(3));
+        p = p.replace(qm[0], ' ');
+      }
+      let rate = null;
+      const rm = p.match(/(?:rate|at|@|rs|rupees)\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*(?:rs|rupees|ka|per)?\b/);
+      if (rm) {
+        rate = parseFloat(rm[1] || rm[2]);
+        p = p.replace(rm[0], ' ');
+      }
+      const name = p.replace(/\b(of|ka|ki|ke|for|add|give|me)\b/g, '').replace(/\s+/g, ' ').trim();
+      return name ? { name, qty, rate } : null;
+    }).filter(Boolean);
+  }
+
+  function pushToPOSCart(order) {
+    const list = [window.products, window.items, window.menuItems, window.fruitList, window.catalog].find(Array.isArray) || [];
+    const match = list.find(x => {
+      const label = (x.name || x.title || x.fruit || '').toLowerCase();
+      return label && (label.includes(order.name) || order.name.includes(label));
+    });
+    const itemName = match ? (match.name || match.title || match.fruit) : order.name.replace(/\b\w/g, c => c.toUpperCase());
+    const finalRate = order.rate ?? (match ? Number(match.price || match.rate || 0) : 0);
+
+    const addFn = [window.addToCart, window.addItemToCart, window.addItem, window.addProductToCart].find(fn => typeof fn === 'function');
+    if (addFn && match) {
+      addFn(match, order.qty, finalRate);
+      if (typeof renderActiveReceipt === 'function') renderActiveReceipt();
+      return `${order.qty} ${itemName} @ ₹${finalRate}`;
+    }
+    if (Array.isArray(window.cart)) {
+      window.cart.push({ ...(match || {}), id: match?.id || Date.now() + Math.random(), name: itemName, qty: order.qty, quantity: order.qty, rate: finalRate, price: finalRate, total: Number((order.qty * finalRate).toFixed(2)) });
+      if (typeof renderActiveReceipt === 'function') renderActiveReceipt();
+      return `${order.qty} ${itemName} @ ₹${finalRate}`;
+    }
+    const card = Array.from(document.querySelectorAll('button, .item-card, .product-card, [onclick]')).find(el => el.textContent.toLowerCase().includes(order.name));
+    if (card) { card.click(); return `${order.qty} ${itemName}`; }
+    return null;
+  }
+
+  btn.addEventListener('click', () => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return notify('Requires Safari/Chrome or Capacitor Speech plugin.');
+    const rec = new SR();
+    rec.lang = 'en-IN';
+    btn.textContent = '🔴 Listening...';
+    notify('Say e.g. "2 kg Apple rate 150"', 6000);
+    rec.onresult = (e) => {
+      const spoken = e.results[0][0].transcript;
+      const parsed = parseVoice(spoken);
+      if (!parsed.length) return notify(`Heard: "${spoken}" — no fruit found.`);
+      const added = parsed.map(pushToPOSCart).filter(Boolean);
+      notify(added.length ? `✅ Added: ${added.join(' | ')}` : `Heard "${spoken}", couldn't match fruit.`);
+    };
+    rec.onerror = (e) => notify(`Mic error: ${e.error}`);
+    rec.onend = () => (btn.textContent = '🎙️ Voice Add');
+    rec.start();
+  });
+})();
+</script>
+
 </body>
 </html>
