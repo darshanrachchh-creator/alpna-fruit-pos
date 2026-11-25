@@ -5963,6 +5963,47 @@
         } else {
             initApp();
         }
+   window.voiceAddToActiveCart = function (order) {
+  var words = order.name.toLowerCase().split(/\s+/).filter(Boolean);
+  var subCols = typeof PLU_CODE_BY_SUBCOL === 'object' ? Object.keys(PLU_CODE_BY_SUBCOL) : [];
+
+  var bestSub = null;
+  var bestScore = 0;
+  subCols.forEach(function (k) {
+    var kl = k.toLowerCase();
+    var score = 0;
+    words.forEach(function (w) {
+      if (kl.indexOf(w) !== -1) score += (w.length > 2 ? 2 : 1);
+    });
+    if (score > bestScore) {
+      bestScore = score;
+      bestSub = k;
+    }
+  });
+
+  var label = bestSub || order.name.replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  var fruitName = bestSub && bestSub.indexOf('::') !== -1 ? bestSub.split('::')[0] : label;
+  var subColName = bestSub && bestSub.indexOf('::') !== -1 ? bestSub.split('::')[1] : label;
+  var rate = Number(order.rate || 0);
+  var qty = Math.round((order.qty || 1) * 1000) / 1000;
+  var amt = Math.round(qty * rate * 100) / 100;
+
+  activeCart.push({
+    id: 'line-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+    pluCode: bestSub ? PLU_CODE_BY_SUBCOL[bestSub] : '',
+    fruit: fruitName,
+    subColumn: subColName,
+    quantity: qty,
+    unit: 'kg',
+    rate: rate,
+    amount: amt
+  });
+
+  renderActiveReceipt();
+  if (typeof showToast === 'function') showToast('Added ' + fruitName + ' (' + subColName + ') ' + qty + ' kg @ ₹' + rate);
+  return qty + ' ' + fruitName + ' [' + subColName + '] @ ₹' + rate;
+};
+
     })();
     </script>
 <script>
@@ -6047,7 +6088,7 @@
       const spoken = e.results[0][0].transcript;
       const parsed = parseVoice(spoken);
       if (!parsed.length) return notify(`Heard: "${spoken}" — no fruit found.`);
-      const added = parsed.map(pushToPOSCart).filter(Boolean);
+      const added = parsed.map(window.voiceAddToActiveCart).filter(Boolean);
       notify(added.length ? `✅ Added: ${added.join(' | ')}` : `Heard "${spoken}", couldn't match fruit.`);
     };
     rec.onerror = (e) => notify(`Mic error: ${e.error}`);
